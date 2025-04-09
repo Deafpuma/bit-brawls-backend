@@ -4,7 +4,7 @@ const tmi = require('tmi.js');
 const client = new tmi.Client({
   identity: {
     username: 'brawl_bit_bot',
-    password: 'oauth:ys0kiu70r01p9ixjedjjwxo3135t7d'
+    password: 'oauth:your_oauth_token_here'
   },
   channels: ['Deafpuma']
 });
@@ -13,46 +13,39 @@ client.connect().then(() => {
   console.log("✅ Bot connected to Twitch chat");
 }).catch(console.error);
 
-const activeFighters = new Set();
-
-client.on('message', (channel, tags, message, self) => {
+client.on('message', async (channel, tags, message, self) => {
   if (self) return;
 
   const username = tags['display-name'];
-  const msg = message.trim();
+  const msg = message.trim().toLowerCase();
 
   if (msg.startsWith('!brawl')) {
-    const args = msg.split(" ");
-    const target = args[1] || null;
-    const bitsWagered = parseInt(args[2]) || 0;
+    const args = message.split(" ");
+    const target = args[1] && isNaN(args[1]) ? args[1] : null;
+    const bitAmount = parseInt(args.find(arg => !isNaN(arg)), 10) || 0;
 
-    if (activeFighters.has(username)) {
-      client.say(channel, `⚠️ ${username} is already in the queue.`);
-      return;
-    }
+    try {
+      const res = await fetch('http://localhost:3005/brawl', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, target, paid: bitAmount > 0, bits: bitAmount })
+      });
 
-    fetch('http://localhost:3005/brawl', {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, target, paid: bitsWagered > 0, bits: bitsWagered })
-    }).then(res => {
-      if (res.status === 200) {
-        activeFighters.add(username);
-        if (bitsWagered > 0) {
-          client.say(channel, `🧨 ${username} enters the fight (wagering ${bitsWagered} Bits!)`);
-        } else {
-          client.say(channel, `📝 ${username} has entered the fight queue (vs ${target || 'anyone brave enough'})`);
-        }
-      } else if (res.status === 409) {
-        client.say(channel, `⚠️ ${username} is already in the queue.`);
+      if (res.status === 409) {
+        client.say(channel, `⚠️ ${username} is already in the fight queue.`);
+      } else {
+        const message = bitAmount > 0
+          ? `🧨 ${username} enters the fight (wagering ${bitAmount} Bits!)`
+          : `📝 ${username} has entered the fight queue${target ? ` (vs ${target})` : "!"}`;
+        client.say(channel, message);
       }
-    }).catch(() => {
-      client.say(channel, `❌ Error adding ${username} to the fight queue.`);
-    });
+    } catch (err) {
+      console.error(err);
+      client.say(channel, `❌ Error processing your brawl request, ${username}.`);
+    }
   }
 });
 
-// 🔥 Called by server.js
 async function trashTalkAndTimeout(winner, loser, introLine, paidA, paidB) {
   const channel = 'Deafpuma';
   const sleep = ms => new Promise(res => setTimeout(res, ms));
@@ -62,11 +55,11 @@ async function trashTalkAndTimeout(winner, loser, introLine, paidA, paidB) {
 
   await sleep(1000);
   if (paidA && !paidB) {
-    await client.say(channel, `💰 ${loser} didn't match Bits — ${winner} auto-wins!`);
+    await client.say(channel, `💰 ${loser} didn’t match Bits — ${winner} auto-wins!`);
   } else if (!paidA && paidB) {
-    await client.say(channel, `💰 ${loser} didn't match Bits — ${winner} auto-wins!`);
+    await client.say(channel, `💰 ${loser} didn’t match Bits — ${winner} auto-wins!`);
   } else {
-    await client.say(channel, `🎲 Both wagered — it's a 50/50!`);
+    await client.say(channel, `🎲 Both wagered — it’s a 50/50!`);
   }
 
   await sleep(1000);
@@ -130,7 +123,6 @@ async function trashTalkAndTimeout(winner, loser, introLine, paidA, paidB) {
     `📡 ${loser} caught signals from every direction — all bad.`
   ];
 
-
   await sleep(1000);
   await client.say(channel, messages[Math.floor(Math.random() * messages.length)]);
 
@@ -138,22 +130,8 @@ async function trashTalkAndTimeout(winner, loser, introLine, paidA, paidB) {
     await sleep(800);
     await client.say(channel, `/timeout ${loser} 60`);
   }
-
-  // 🧹 Remove from active set
-  activeFighters.delete(winner);
-  activeFighters.delete(loser);
-}
-
-function announceQueueEntry(username, opponent, paid, bits) {
-  const channel = 'Deafpuma';
-  if (paid && bits > 0) {
-    client.say(channel, `🧨 ${username} enters the fight (wagering ${bits} Bits!)`);
-  } else {
-    client.say(channel, `📝 ${username} has entered the fight queue (vs ${opponent})`);
-  }
 }
 
 module.exports = {
-  trashTalkAndTimeout,
-  announceQueueEntry
+  trashTalkAndTimeout
 };

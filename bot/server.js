@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { trashTalkAndTimeout, announceQueueEntry } = require('./bot.js');
+const { trashTalkAndTimeout } = require('./bot.js');
 
 const app = express();
 const PORT = 3005;
@@ -10,28 +10,24 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-
 let challengeQueue = [];
 let fightInProgress = false;
 let latestFight = null;
 let overlayMuted = false;
 
-// 🔁 Receive fight challenges
 app.post('/brawl', (req, res) => {
-  const { username, target, paid } = req.body;
+  const { username, target, paid, bits } = req.body;
   const opponent = target || 'anyone brave enough';
 
   const existing = challengeQueue.find(c => c.username === username);
   if (existing) return res.status(409).send("Already in queue");
 
-  announceQueueEntry(username, opponent, paid);
-  challengeQueue.push({ username, target: opponent, paid });
+  challengeQueue.push({ username, target: opponent, paid, bits: bits || 0 });
   tryStartFight();
 
   res.sendStatus(200);
 });
 
-// ✅ Poll overlay for latest fight
 app.get("/latest-fight", (req, res) => {
   if (latestFight) {
     res.json({ ...latestFight, muted: overlayMuted });
@@ -58,6 +54,7 @@ app.post("/toggle-sound", (req, res) => {
   res.sendStatus(200);
 });
 
+
 app.listen(PORT, () => {
   console.log(`🔥 Bot server running at http://localhost:${PORT}`);
 });
@@ -79,6 +76,7 @@ async function tryStartFight() {
 
   const fighterB = challengeQueue.splice(matchIndex, 1)[0];
   fightInProgress = true;
+
 
   const intros = [
     `${fighterA.username} challenges ${fighterB.username} with one shoe missing but he's ready to go!`,
@@ -137,9 +135,8 @@ async function tryStartFight() {
 
   ];
 
-  const intro = intros[Math.floor(Math.random() * intros.length)];
+  
   let winner, loser;
-
   if (fighterA.paid && !fighterB.paid) {
     winner = fighterA.username;
     loser = fighterB.username;
@@ -151,10 +148,9 @@ async function tryStartFight() {
     loser = winner === fighterA.username ? fighterB.username : fighterA.username;
   }
 
-  console.log(`🏆 Winner: ${winner}, Loser: ${loser}`);
+  latestFight = { intro, winner, loser };
   await trashTalkAndTimeout(winner, loser, intro, fighterA.paid, fighterB.paid);
 
-  latestFight = { intro, winner, loser };
   fightInProgress = false;
   setTimeout(tryStartFight, 3000);
 }
