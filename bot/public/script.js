@@ -14,7 +14,29 @@ const koMessages = [
   "🌪️ {loser} got swept out of the arena. Oof!",
   "🕳️ {loser} fell into a wormhole mid-punch.",
   "🐔 {loser} ran off clucking. Chicken confirmed.",
-  "🚫 {loser} just got banned from life."
+  "🚫 {loser} just got banned from life.",
+  "💥 {loser} got beaned into a loading screen!",
+  "📴 {loser} just got disconnected from life.",
+  "🧹 {loser} got swept AND mopped. Clean KO!",
+  "🔮 {loser} didn’t see that one coming. Fate sealed.",
+  "🎲 {loser} rolled a nat 1. It’s super effective.",
+  "🚀 {loser} took off like a bottle rocket. KO confirmed.",
+  "📼 {loser}'s defeat is already a Twitch clip.",
+  "📉 {loser}'s stock just dropped in real time.",
+  "🎭 {loser} just got clowned so hard the circus left town.",
+  "🪦 {loser} found the respawn point the hard way.",
+  "🧨 {loser} exploded into confetti — we checked.",
+  "🍩 {loser} left with zero wins and one donut.",
+  "🛑 {loser} hit the wall and bounced back to the lobby.",
+  "📚 {loser} just became the example in the rulebook.",
+  "🎤 {loser} caught a mic drop. To the face.",
+  "🧽 {loser} got wiped clean like a dry erase board.",
+  "🧻 {loser} crumbled like a cheap napkin.",
+  "🫥 {loser} disappeared mid-fight. Poof.",
+  "🍕 {loser} folded like a pizza slice on a hot day.",
+  "🏳️ {loser} just surrendered via emoji.",
+
+  
 ];
 
 function playSound(name, volume = 1.0) {
@@ -43,9 +65,29 @@ function triggerFightVisuals(intro, winner, loser) {
   const trashTalk = [
     `${loser} got folded like a lawn chair by ${winner}!`,
     `${winner} drop-kicked ${loser} into the void.`,
-    `RIP ${loser} — ${winner} said \"sit down.\"`,
+    `RIP ${loser} — ${winner} showed them a mirror.`,
     `${loser} got hit so weak it felt like a baby slap!`,
-    `${winner} just KO’d ${loser} with a flying elbow!`
+    `${winner} just KO’d ${loser} with a flying elbow!`,
+    `${winner} hit ${loser} so hard they installed updates.`,
+    `${loser} just got KO’d into next week's stream.`,
+    `${winner} drop-kicked ${loser} out of their overlay.`,
+    `${loser} is now trending on #KOFail.`,
+    `${winner} just made ${loser} a tutorial clip.`,
+    `${loser} got outplayed, outpaced, and ouch.`,
+    `${winner} made that look easy. ${loser}, not so much.`,
+    `${loser} was last seen flying through the chat.`,
+    `${winner} embarrassed ${loser} in front of 12 viewers and a cat.`,
+    `${loser} is rebooting... please wait.`,
+    `${winner} earned a badge: Stream KO Master.`,
+    `${loser} unplugged mid-match. Or just panicked.`,
+    `${winner} just hit ${loser} with the power of bad WiFi.`,
+    `${winner} didn’t even break a sweat. ${loser} did.`,
+    `${loser} got combo’d into Twitch obscurity.`,
+    `${winner} just ran a tutorial... and ${loser} was the dummy.`,
+    `${winner} wins again! ${loser} is in timeout.`,
+    `${loser} got bodied so hard it hit the backend.`,
+    `${winner} activated god mode. ${loser} was not ready.`,
+
   ];
   const line = trashTalk[Math.floor(Math.random() * trashTalk.length)];
   log.innerHTML = `🥊 ${intro}<br>🏆 <strong>${winner}</strong> wins the fight!<br>${line}<br>${koLine}`;
