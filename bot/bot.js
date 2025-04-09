@@ -16,14 +16,12 @@ client.connect().then(() => {
 let challengeQueue = [];
 let activeChallenge = null;
 
-// ✅ Handle incoming chat
 client.on('message', async (channel, tags, message, self) => {
   if (self) return;
 
   const username = tags['display-name'];
   const msg = message.trim().toLowerCase();
 
-  // 🔥 !brawl [opponent]
   if (msg.startsWith('!brawl')) {
     const args = message.split(" ");
     const target = args[1]?.replace("@", "").toLowerCase();
@@ -34,7 +32,6 @@ client.on('message', async (channel, tags, message, self) => {
 
     const paid = true;
     const challenge = { username, target: target || null, paid };
-
     challengeQueue.push(challenge);
 
     if (target && target !== username.toLowerCase()) {
@@ -46,7 +43,6 @@ client.on('message', async (channel, tags, message, self) => {
     matchGeneric();
   }
 
-  // ✅ Accept challenge
   if (msg === '!accept' && activeChallenge) {
     const responder = username.toLowerCase();
     if (responder === activeChallenge.target) {
@@ -63,7 +59,6 @@ client.on('message', async (channel, tags, message, self) => {
   }
 });
 
-// 🥊 Random matchmaker
 function matchGeneric() {
   if (challengeQueue.length >= 2) {
     const [a, b] = challengeQueue.splice(0, 2);
@@ -71,7 +66,6 @@ function matchGeneric() {
   }
 }
 
-// 💥 Fight logic
 async function runFight(fighterA, fighterB) {
   const channel = 'Deafpuma';
   const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -129,11 +123,9 @@ async function runFight(fighterA, fighterB) {
     `${fighterA.username} enters with one sock and all the rage.`,
     `${fighterA.username} is here, and ${fighterB.username} is about to be there.`,
     `${fighterA.username} just unplugged the router to gain an advantage over ${fighterB.username}.`
-
-
   ];
 
-  const roast = [
+  const roasts = [
     `💥 ${loser} got folded like a lawn chair by ${winner}!`,
     `🔥 ${loser} is the human equivalent of a participation trophy. Good try I guess.`,
     `⚰️ RIP ${loser} — ${winner} said "sit down."`,
@@ -191,9 +183,7 @@ async function runFight(fighterA, fighterB) {
     `📡 ${loser} caught signals from every direction — all bad.`
   ];
 
-
   const intro = intros[Math.floor(Math.random() * intros.length)];
-  const roastLine = roast[Math.floor(Math.random() * roast.length)];
 
   await client.say(channel, `🥊 ${intro}`);
   await sleep(1000);
@@ -210,19 +200,20 @@ async function runFight(fighterA, fighterB) {
 
   const winner = Math.random() > 0.5 ? fighterA.username : fighterB.username;
   const loser = winner === fighterA.username ? fighterB.username : fighterA.username;
+  const roastLine = roasts[Math.floor(Math.random() * roasts.length)]
+    .replace(`${fighterA.username}`, winner)
+    .replace(`${fighterB.username}`, loser);
 
   await sleep(1000);
   await client.say(channel, `🏆 ${winner} WINS! 💀 ${loser} has been KO'd!`);
   await sleep(800);
   await client.say(channel, roastLine);
 
-
   if (fighterA.paid && fighterB.paid) {
     await sleep(800);
     await client.say(channel, `/timeout ${loser} 60`);
   }
 
-  // 🔁 Send to overlay
   await fetch('http://localhost:3005/set-fight', {
     method: "POST",
     headers: { "Content-Type": "application/json" },
