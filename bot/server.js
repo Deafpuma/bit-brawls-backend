@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { trashTalkAndTimeout, announceQueueEntry } = require('./bot');
+const { trashTalkAndTimeout, announceQueueEntry } = require('./bot.js');
 
 const app = express();
 const PORT = 3005;
@@ -13,28 +13,23 @@ let fightInProgress = false;
 let latestFight = null;
 let overlayMuted = false;
 
-// Confirm server is running
-app.listen(PORT, () => {
-  console.log(`🔥 Bot server running at http://localhost:${PORT}`);
-});
-
-// Handle new brawl
+// 🔁 Receive fight challenges
 app.post('/brawl', (req, res) => {
   const { username, target, paid } = req.body;
   const opponent = target || 'anyone brave enough';
 
   const existing = challengeQueue.find(c => c.username === username);
-  if (existing) return res.sendStatus(200);
+  if (existing) return res.status(409).send("Already in queue");
 
-  announceQueueEntry(username, opponent);
+  announceQueueEntry(username, opponent, paid);
   challengeQueue.push({ username, target: opponent, paid });
   tryStartFight();
 
   res.sendStatus(200);
 });
 
-// Endpoint for overlay polling
-app.get('/latest-fight', (req, res) => {
+// ✅ Poll overlay for latest fight
+app.get("/latest-fight", (req, res) => {
   if (latestFight) {
     res.json({ ...latestFight, muted: overlayMuted });
     latestFight = null;
@@ -43,26 +38,27 @@ app.get('/latest-fight', (req, res) => {
   }
 });
 
-// Manual test
-app.get('/debug-fight', (req, res) => {
+app.get("/debug-fight", (req, res) => {
   latestFight = {
-    intro: "Test Brawler challenges The Champ!",
-    winner: "Test Brawler",
-    loser: "The Champ",
+    intro: "Punchbot challenges KOzilla in the Octagon!",
+    winner: "Punchbot",
+    loser: "KOzilla",
     muted: false
   };
-  console.log("✅ Debug fight injected");
-  res.send("✅ Debug fight injected");
+  console.log("✅ Injected debug fight");
+  res.send("✅ Test fight injected");
 });
 
-// Toggle sound for overlay
-app.post('/toggle-sound', (req, res) => {
+app.post("/toggle-sound", (req, res) => {
   overlayMuted = !!req.body.mute;
   console.log(`🔇 Overlay muted: ${overlayMuted}`);
   res.sendStatus(200);
 });
 
-// Fight logic
+app.listen(PORT, () => {
+  console.log(`🔥 Bot server running at http://localhost:${PORT}`);
+});
+
 async function tryStartFight() {
   if (fightInProgress || challengeQueue.length < 2) return;
 
@@ -82,12 +78,12 @@ async function tryStartFight() {
   fightInProgress = true;
 
   const intros = [
-    `${fighterA.username} calls out ${fighterB.username} with flaming fists!`,
-    `${fighterA.username} yells "YOU!" and runs at ${fighterB.username}!`,
-    `${fighterA.username} charges ${fighterB.username} wearing glitter armor!`
+    `${fighterA.username} challenges ${fighterB.username} with one shoe missing but he's ready to go!`,
+    `${fighterA.username} steps in yelling \"HOLD MY JUICE!\" at ${fighterB.username}!`,
+    `${fighterA.username} walks in with glitter boots to face ${fighterB.username}!`
   ];
-  const intro = intros[Math.floor(Math.random() * intros.length)];
 
+  const intro = intros[Math.floor(Math.random() * intros.length)];
   let winner, loser;
 
   if (fighterA.paid && !fighterB.paid) {
@@ -106,6 +102,5 @@ async function tryStartFight() {
 
   latestFight = { intro, winner, loser };
   fightInProgress = false;
-
   setTimeout(tryStartFight, 3000);
 }
