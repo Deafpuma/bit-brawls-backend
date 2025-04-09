@@ -4,7 +4,7 @@ const tmi = require('tmi.js');
 const client = new tmi.Client({
   identity: {
     username: 'brawl_bit_bot',
-    password: 'oauth:your_oauth_token_here'
+    password: 'oauth:ys0kiu70r01p9ixjedjjwxo3135t7d'
   },
   channels: ['Deafpuma']
 });
@@ -13,57 +13,133 @@ client.connect().then(() => {
   console.log("✅ Bot connected to Twitch chat");
 }).catch(console.error);
 
+const challengeQueue = [];
+let pendingChallenges = {};
+
 client.on('message', async (channel, tags, message, self) => {
   if (self) return;
-
   const username = tags['display-name'];
   const msg = message.trim().toLowerCase();
 
+  // ✅ Handle !brawl [optional opponent]
   if (msg.startsWith('!brawl')) {
-    const args = message.split(" ");
-    const target = args[1] && isNaN(args[1]) ? args[1] : null;
-    const bitAmount = parseInt(args.find(arg => !isNaN(arg)), 10) || 0;
+    const args = message.split(' ');
+    const target = args[1] ? args[1].toLowerCase() : null;
 
-    try {
-      const res = await fetch('http://localhost:3005/brawl', {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, target, paid: bitAmount > 0, bits: bitAmount })
-      });
+    // Already in queue?
+    if (challengeQueue.find(u => u.username.toLowerCase() === username.toLowerCase())) {
+      return client.say(channel, `⚠️ ${username} is already in the fight queue.`);
+    }
 
-      if (res.status === 409) {
-        client.say(channel, `⚠️ ${username} is already in the fight queue.`);
-      } else {
-        const message = bitAmount > 0
-          ? `🧨 ${username} enters the fight (wagering ${bitAmount} Bits!)`
-          : `📝 ${username} has entered the fight queue${target ? ` (vs ${target})` : "!"}`;
-        client.say(channel, message);
-      }
-    } catch (err) {
-      console.error(err);
-      client.say(channel, `❌ Error processing your brawl request, ${username}.`);
+    const challenge = { username, target, paid: true };
+
+    // If challenging someone directly
+    if (target && target !== username.toLowerCase()) {
+      pendingChallenges[target] = challenge;
+      challengeQueue.push(challenge);
+      client.say(channel, `🧨 ${username} challenges ${target} to a Bit Brawl! Waiting for ${target} to !accept...`);
+    } else {
+      challengeQueue.push(challenge);
+      client.say(channel, `🧨 ${username} enters the fight (wagering Bits!)`);
+      tryStartFight(channel);
+    }
+  }
+
+  // ✅ Handle !accept
+  if (msg === '!accept') {
+    const accepter = username.toLowerCase();
+    if (pendingChallenges[accepter]) {
+      const challenger = pendingChallenges[accepter];
+      delete pendingChallenges[accepter];
+
+      client.say(channel, `⚔️ ${username} accepted the challenge from ${challenger.username}! Let the brawl begin!`);
+
+      challengeQueue.splice(challengeQueue.indexOf(challenger), 1);
+      const opponent = { username, target: null, paid: true };
+      triggerFight(challenger, opponent);
     }
   }
 });
 
-async function trashTalkAndTimeout(winner, loser, introLine, paidA, paidB) {
+// ✅ Check for generic matches
+function tryStartFight(channel) {
+  if (challengeQueue.length < 2) return;
+
+  const fighterA = challengeQueue.shift();
+  const matchIndex = challengeQueue.findIndex(f =>
+    f.username.toLowerCase() !== fighterA.username.toLowerCase()
+  );
+
+  if (matchIndex === -1) {
+    challengeQueue.unshift(fighterA);
+    return;
+  }
+
+  const fighterB = challengeQueue.splice(matchIndex, 1)[0];
+  triggerFight(fighterA, fighterB);
+}
+
+// ✅ Actual fight + overlay trigger
+async function triggerFight(fighterA, fighterB) {
   const channel = 'Deafpuma';
   const sleep = ms => new Promise(res => setTimeout(res, ms));
 
-  await sleep(500);
-  await client.say(channel, `🥊 ${introLine}`);
+  const intros = [
+    `${fighterA.username} challenges ${fighterB.username} with one shoe missing but he's ready to go!`,
+    `${fighterA.username} steps in yelling \"HOLD MY JUICE!\" at ${fighterB.username}!`,
+    `${fighterA.username} walks in with glitter boots to face ${fighterB.username}!`,
+    `${fighterA.username} bursts in riding a shopping cart straight at ${fighterB.username}!`,
+    `${fighterA.username} showed up wearing Crocs and confidence. ${fighterB.username} is doomed.`,
+    `${fighterA.username} smacks ${fighterB.username} with a fish and screams “IT'S GO TIME!”`,
+    `${fighterA.username} rolled in yelling “I HAVE THE HIGH GROUND!” at ${fighterB.username}.`,
+    `${fighterA.username} challenges ${fighterB.username} using only interpretive dance.`,
+    `${fighterA.username} jumps out of a bush yelling “BRAWL ME, NERD!” at ${fighterB.username}.`,
+    `${fighterA.username} slides in on a banana peel directly into ${fighterB.username}'s face.`,
+    `${fighterA.username} came to fight. ${fighterB.username} just came for snacks.`,
+    `${fighterA.username} brought a kazoo... and chaos. ${fighterB.username} is nervous.`,
+    `${fighterA.username} starts screaming like a goat at ${fighterB.username}. This is war.`,
+    `${fighterA.username} just slapped ${fighterB.username} with a wet sock. It’s on.`,
+    `${fighterA.username} jumped in like “You rang?” while ${fighterB.username} choked on air.`,
+    `${fighterA.username} is powered by caffeine and petty today. ${fighterB.username}, beware.`,
+    `${fighterA.username} enters spinning a rubber chicken above their head toward ${fighterB.username}!`,
+    `${fighterA.username} asked “You got games on your phone?” and punched ${fighterB.username} mid-sentence.`,
+    `${fighterA.username} spawned from the void screaming “BRAWL!” and points at ${fighterB.username}.`,
+    `${fighterA.username} cartwheels in yelling “I JUST ATE 3 HOTDOGS LET’S GO!”`,
+    `${fighterA.username} smashes through the ceiling screaming “WHY AM I HERE?!” at ${fighterB.username}.`,
+    `${fighterA.username} yeets themselves into the ring like it’s a Smash Bros tournament.`,
+    `${fighterA.username} summoned a squirrel army they all attacked ${fighterB.username}`,
+    `${fighterA.username} moonwalks into the ring and throws glitter in ${fighterB.username}’s eyes.`,
+    `${fighterA.username} ran in with a pool noodle and war paint. ${fighterB.username} isn’t ready.`,
+    `${fighterA.username} screamed “BABA BOOEY!” and charged ${fighterB.username}.`,
+    `${fighterA.username} rips off their shirt to reveal another shirt. ${fighterB.username} is terrified.`,
+    `${fighterA.username} points at ${fighterB.username} and says “This is personal… for no reason.”`,
+    `${fighterA.username} walked in sipping juice like “I got time today.”`,
+    `${fighterA.username} does a split, screams "FOR THE VINE!", and punches ${fighterB.username}.`,
+    `${fighterA.username} enters in a bathrobe with a bat and bad intentions.`,
+    `${fighterA.username} backflips in with sunglasses yelling “IT’S TIME TO DUEL!”`,
+    `${fighterA.username} shows up riding a llama, staring down ${fighterB.username}!`,
+    `${fighterA.username} challenges ${fighterB.username} with a juice box and no fear.`,
+    `${fighterA.username} moonwalks into the ring to face ${fighterB.username}!`,
+    `${fighterA.username} enters flapping like a bird at ${fighterB.username}.`,
+    `${fighterA.username} throws down the glitter gauntlet at ${fighterB.username}.`,
+    `${fighterA.username} teleports in shouting "I AM THE STORM!" at ${fighterB.username}.`,
+    `${fighterA.username} came in wearing crocs and confidence to fight ${fighterB.username}.`,
+    `${fighterA.username} launches into the ring via trampoline aimed at ${fighterB.username}.`,
+    `${fighterA.username} slaps ${fighterB.username} with a rubber chicken. It's on.`,
+    `${fighterA.username} appears from a cloud of smoke ready to slap ${fighterB.username}.`,
+    `${fighterA.username} woke up today and chose violence. ${fighterB.username}, prepare.`,
+    `${fighterA.username} dropped from the sky Fortnite-style onto ${fighterB.username}.`,
+    `${fighterA.username} came in hot with energy drinks and vengeance for ${fighterB.username}.`,
+    `${fighterA.username} rides a Segway into the arena to battle ${fighterB.username}.`,
+    `${fighterA.username} does 3 cartwheels then stares down ${fighterB.username}.`,
+    `${fighterA.username} crashes through the ceiling screaming "${fighterB.username}, FIGHT ME!"`,
+    `${fighterA.username} called ${fighterB.username} out during their lunch break.`,
+    `${fighterA.username} enters with one sock and all the rage.`,
+    `${fighterA.username} is here, and ${fighterB.username} is about to be there.`,
+    `${fighterA.username} just unplugged the router to gain an advantage over ${fighterB.username}.`
 
-  await sleep(1000);
-  if (paidA && !paidB) {
-    await client.say(channel, `💰 ${loser} didn’t match Bits — ${winner} auto-wins!`);
-  } else if (!paidA && paidB) {
-    await client.say(channel, `💰 ${loser} didn’t match Bits — ${winner} auto-wins!`);
-  } else {
-    await client.say(channel, `🎲 Both wagered — it’s a 50/50!`);
-  }
 
-  await sleep(1000);
-  await client.say(channel, `🏆 ${winner} WINS! 💀 ${loser} has been KO'd!`);
+  ];
 
   const messages = [
     `💥 ${loser} got folded like a lawn chair by ${winner}!`,
@@ -123,15 +199,51 @@ async function trashTalkAndTimeout(winner, loser, introLine, paidA, paidB) {
     `📡 ${loser} caught signals from every direction — all bad.`
   ];
 
+
+  const intro = intros[Math.floor(Math.random() * intros.length)];
+
+  await sleep(500);
+  await client.say(channel, `🥊 ${intro}`);
+
+  let winner, loser;
+  if (fighterA.paid && !fighterB.paid) {
+    winner = fighterA.username;
+    loser = fighterB.username;
+    await sleep(1000);
+    await client.say(channel, `💰 ${loser} didn't match Bits — ${winner} auto-wins!`);
+  } else if (!fighterA.paid && fighterB.paid) {
+    winner = fighterB.username;
+    loser = fighterA.username;
+    await sleep(1000);
+    await client.say(channel, `💰 ${loser} didn't match Bits — ${winner} auto-wins!`);
+  } else {
+    winner = Math.random() > 0.5 ? fighterA.username : fighterB.username;
+    loser = winner === fighterA.username ? fighterB.username : fighterA.username;
+    await sleep(800);
+    await client.say(channel, `🎲 Both wagered — it's a 50/50!`);
+  }
+
+  await sleep(1000);
+  await client.say(channel, `🏆 ${winner} WINS! 💀 ${loser} has been KO'd!`);
+
   await sleep(1000);
   await client.say(channel, messages[Math.floor(Math.random() * messages.length)]);
 
-  if (paidA && paidB) {
+  if (fighterA.paid && fighterB.paid) {
     await sleep(800);
     await client.say(channel, `/timeout ${loser} 60`);
   }
+
+  // Send to overlay
+  await fetch('http://localhost:3005/set-fight', {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ intro, winner, loser })
+  }).catch(err => {
+    console.warn("⚠️ Failed to send fight to overlay:", err.message);
+  });
 }
 
 module.exports = {
-  trashTalkAndTimeout
+  trashTalkAndTimeout: triggerFight
 };
