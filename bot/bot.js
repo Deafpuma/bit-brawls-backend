@@ -13,25 +13,38 @@ client.connect().then(() => {
   console.log("✅ Bot connected to Twitch chat");
 }).catch(console.error);
 
+const activeFighters = new Set();
+
 client.on('message', (channel, tags, message, self) => {
   if (self) return;
 
   const username = tags['display-name'];
-  const msg = message.trim().toLowerCase();
+  const msg = message.trim();
 
   if (msg.startsWith('!brawl')) {
-    const args = message.split(" ");
+    const args = msg.split(" ");
     const target = args[1] || null;
+    const bitsWagered = parseInt(args[2]) || 0;
+
+    if (activeFighters.has(username)) {
+      client.say(channel, `⚠️ ${username} is already in the queue.`);
+      return;
+    }
 
     fetch('http://localhost:3005/brawl', {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, target, paid: true })
+      body: JSON.stringify({ username, target, paid: bitsWagered > 0, bits: bitsWagered })
     }).then(res => {
-      if (res.status === 409) {
+      if (res.status === 200) {
+        activeFighters.add(username);
+        if (bitsWagered > 0) {
+          client.say(channel, `🧨 ${username} enters the fight (wagering ${bitsWagered} Bits!)`);
+        } else {
+          client.say(channel, `📝 ${username} has entered the fight queue (vs ${target || 'anyone brave enough'})`);
+        }
+      } else if (res.status === 409) {
         client.say(channel, `⚠️ ${username} is already in the queue.`);
-      } else {
-        client.say(channel, `🧨 ${username} enters the fight (wagering Bits!)`);
       }
     }).catch(() => {
       client.say(channel, `❌ Error adding ${username} to the fight queue.`);
@@ -65,7 +78,6 @@ async function trashTalkAndTimeout(winner, loser, introLine, paidA, paidB) {
     `⚰️ RIP ${loser} — ${winner} said "sit down."`,
     `💣 ${winner} KO’d ${loser} with a flying elbow!`,
     `🥶 ${loser} got the ice cream sweats and melted. ${winner} wins by default.`,
-    `💣 ${winner} KO’d ${loser} with a flying elbow!`,
     `💥 ${loser} was last seen orbiting Saturn. Good hit, ${winner}.`,
     `☠️ ${loser} just evaporated. ${winner} didn’t even blink.`,
     `🧼 ${winner} washed ${loser} and hung them up to dry.`,
@@ -102,7 +114,7 @@ async function trashTalkAndTimeout(winner, loser, introLine, paidA, paidB) {
     `🍩 ${loser} left the arena with zero wins and one donut.`,
     `🎨 ${winner} painted the floor with ${loser}’s pride.`,
     `🔕 ${loser} got silenced like a bad ringtone.`,
-    `🎤 ${winner} dropped the mic... on ${loser}’s face.`,
+    `🎤 ${winner} dropped the mic... on ${loser}’s shoulder and was like yeah that hurt uh?!.`,
     `🧂 ${loser} is salty. Confirmed.`,
     `🏚️ ${loser} got evicted mid-fight. ${winner} owns the ring.`,
     `🍦 ${loser} melted like soft serve. Yikes.`,
@@ -115,9 +127,9 @@ async function trashTalkAndTimeout(winner, loser, introLine, paidA, paidB) {
     `🎩 ${winner} turned ${loser} into a disappearing act.`,
     `🌮 ${loser} got crunched like a bad taco.`,
     `🦆 ${loser} waddled in, flew out. ${winner} wins.`,
-    `📡 ${loser} caught signals from every direction — all bad.`,
-
+    `📡 ${loser} caught signals from every direction — all bad.`
   ];
+
 
   await sleep(1000);
   await client.say(channel, messages[Math.floor(Math.random() * messages.length)]);
@@ -126,12 +138,16 @@ async function trashTalkAndTimeout(winner, loser, introLine, paidA, paidB) {
     await sleep(800);
     await client.say(channel, `/timeout ${loser} 60`);
   }
+
+  // 🧹 Remove from active set
+  activeFighters.delete(winner);
+  activeFighters.delete(loser);
 }
 
-function announceQueueEntry(username, opponent, paid) {
+function announceQueueEntry(username, opponent, paid, bits) {
   const channel = 'Deafpuma';
-  if (paid) {
-    client.say(channel, `🧨 ${username} enters the fight (wagering Bits!)`);
+  if (paid && bits > 0) {
+    client.say(channel, `🧨 ${username} enters the fight (wagering ${bits} Bits!)`);
   } else {
     client.say(channel, `📝 ${username} has entered the fight queue (vs ${opponent})`);
   }

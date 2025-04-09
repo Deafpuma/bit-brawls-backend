@@ -34,9 +34,7 @@ const koMessages = [
   "🧻 {loser} crumbled like a cheap napkin.",
   "🫥 {loser} disappeared mid-fight. Poof.",
   "🍕 {loser} folded like a pizza slice on a hot day.",
-  "🏳️ {loser} just surrendered via emoji.",
-
-  
+  "🏳️ {loser} just surrendered via emoji."
 ];
 
 function playSound(name, volume = 1.0) {
@@ -86,8 +84,7 @@ function triggerFightVisuals(intro, winner, loser) {
     `${winner} just ran a tutorial... and ${loser} was the dummy.`,
     `${winner} wins again! ${loser} is in timeout.`,
     `${loser} got bodied so hard it hit the backend.`,
-    `${winner} activated god mode. ${loser} was not ready.`,
-
+    `${winner} activated god mode. ${loser} was not ready.`
   ];
   const line = trashTalk[Math.floor(Math.random() * trashTalk.length)];
   log.innerHTML = `🥊 ${intro}<br>🏆 <strong>${winner}</strong> wins the fight!<br>${line}<br>${koLine}`;
@@ -144,4 +141,3 @@ window.addEventListener("load", () => {
   console.log("✅ Overlay script loaded");
   setInterval(pollLatestFight, 5000);
 });
-
