@@ -223,7 +223,7 @@ async function runFight(fighterA, fighterB) {
     `📡 ${loser} caught signals from every direction — all bad.`
   ];
 
-  const rawRoast = roasts[Math.floor(Math.random() * rawRoasts.length)];
+  const rawRoast = roasts[Math.floor(Math.random() * roasts.length)];
   const roast = rawRoast.replace(/{winner}/g, winner).replace(/{loser}/g, loser);
 
   const finalMessage = `🏆 ${winner} WINS! 💀 ${loser} KO'd!\n${roast}`;
