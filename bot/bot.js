@@ -120,9 +120,9 @@ async function runFight(fighterA, fighterB) {
   await client.say(channel, roast);
 
   // Optional: send to overlay if server is running
-  await fetch('http://localhost:3005/set-fight', {
+  await fetch("https://bit-brawls-backend.onrender.com/set-fight", {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ intro, winner, loser })
-  }).catch(err => console.warn("Overlay not responding:", err.message));
+  });
 }

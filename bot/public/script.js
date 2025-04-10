@@ -83,7 +83,7 @@ function triggerFightVisuals(intro, winner, loser) {
 
 async function pollLatestFight() {
   try {
-    const res = await fetch("http://localhost:3005/latest-fight");
+    const res = await fetch("https://bit-brawls-backend.onrender.com/latest-fight");
     if (!res.ok) return;
     const data = await res.json();
     if (data.muted) overlayMuted = true;
