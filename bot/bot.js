@@ -298,7 +298,9 @@ async function runFight(fighterA, fighterB) {
   if (wagerA > 0 && wagerB > 0) {
     const timeoutDuration = Math.min(Math.max(wagerA, wagerB), MAX_TIMEOUT_SECONDS);
     await sleep(800);
-    await client.say(channel, `/timeout ${loser} ${timeoutDuration}`);
+    await client.timeout(channel, loser, timeoutDuration, `KO'd in Bit Brawls`)
+    .catch(err => console.warn("⚠️ Timeout failed:", err.message));
+
   }
 
   delete userBitWagers[fighterA.username];
