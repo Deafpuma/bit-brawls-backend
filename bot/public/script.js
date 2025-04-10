@@ -3,6 +3,7 @@ let userId = null;
 let fightInProgress = false;
 let soundIsPlaying = false;
 let overlayMuted = false;
+let userBitWagers = {};
 
 const koMessages = [
   "💥 KO! {loser} got launched into the Shadow Realm!",

@@ -15,6 +15,7 @@ client.connect().then(() => {
 
 let challengeQueue = [];
 let pendingChallenges = {};
+let userBitWagers = {}; // Track user wager amounts
 let fightInProgress = false;
 
 client.on('message', async (channel, tags, message, self) => {
@@ -23,7 +24,8 @@ client.on('message', async (channel, tags, message, self) => {
   const username = tags['display-name'];
   const msg = message.trim().toLowerCase();
 
-  if (msg.startsWith('!brawl')) {
+  // 💥 Handle !bitbrawl
+  if (msg.startsWith('!bitbrawl')) {
     const args = msg.split(' ');
     const target = args[1]?.replace('@', '').toLowerCase();
 
@@ -39,9 +41,22 @@ client.on('message', async (channel, tags, message, self) => {
     }
 
     challengeQueue.push(challenger);
+    client.say(channel, `📝 ${username} has entered the fight queue (vs anyone brave enough). Type !bits <amount> to place your wager!`);
     tryStartFight();
   }
 
+  // 💸 Handle !bits 100
+  if (msg.startsWith('!bits')) {
+    const args = msg.split(' ');
+    const amount = parseInt(args[1]);
+    if (isNaN(amount) || amount <= 0) {
+      return client.say(channel, `❌ ${username}, please enter a valid bit amount like "!bits 100"`);
+    }
+    userBitWagers[username] = amount;
+    client.say(channel, `💰 ${username} is wagering ${amount} Bits!`);
+  }
+
+  // ✅ Accept a challenge
   if (msg === '!accept') {
     const accepter = username.toLowerCase();
     const challenger = pendingChallenges[accepter];
@@ -67,7 +82,6 @@ function tryStartFight() {
 
 async function runFight(fighterA, fighterB) {
   fightInProgress = true;
-
   const channel = 'Deafpuma';
   const sleep = ms => new Promise(res => setTimeout(res, ms));
 
@@ -188,27 +202,41 @@ async function runFight(fighterA, fighterB) {
   await client.say(channel, `🥊 ${intro}`);
   await sleep(1000);
 
-  if (fighterA.paid && !fighterB.paid) {
-    await client.say(channel, `💰 ${fighterB.username} didn't match Bits — ${fighterA.username} auto-wins!`);
+  const wagerA = userBitWagers[fighterA.username] || 0;
+  const wagerB = userBitWagers[fighterB.username] || 0;
+
+  if (wagerA && !wagerB) {
+    await client.say(channel, `💰 ${fighterB.username} didn't match the wager — ${fighterA.username} auto-wins!`);
     fightInProgress = false;
     return;
-  } else if (!fighterA.paid && fighterB.paid) {
-    await client.say(channel, `💰 ${fighterA.username} didn't match Bits — ${fighterB.username} auto-wins!`);
+  } else if (!wagerA && wagerB) {
+    await client.say(channel, `💰 ${fighterA.username} didn't match the wager — ${fighterB.username} auto-wins!`);
     fightInProgress = false;
     return;
   }
 
-  await client.say(channel, `🎲 Both wagered — it's a 50/50!`);
+  await client.say(channel, `🎲 ${fighterA.username} wagered ${wagerA} Bits vs ${fighterB.username} wagered ${wagerB} Bits! It's on!`);
   await sleep(1000);
 
   const winner = Math.random() > 0.5 ? fighterA.username : fighterB.username;
   const loser = winner === fighterA.username ? fighterB.username : fighterA.username;
-  const roast = roasts[Math.floor(Math.random() * roasts.length)]
-    .replace(/\${winner}/g, winner).replace(/\${loser}/g, loser)
-    .replace("{winner}", winner).replace("{loser}", loser);
 
-  const finalMessage = `🏆 ${winner} WINS! 💀 ${loser} KO'd!\n${roast}`;
+  const roast = roasts[Math.floor(Math.random() * roasts.length)]
+    .replace("${winner}", winner).replace("${loser}", loser);
+
+  const finalMessage = `🏆 ${winner} WINS! 💀 ${loser} KO'd!
+${roast}`;
   await client.say(channel, finalMessage);
+
+  delete userBitWagers[fighterA.username];
+  delete userBitWagers[fighterB.username];
+
+
+  //await fetch('http://localhost:3005/set-fight', {
+  //  method: "POST",
+  //  headers: { "Content-Type": "application/json" },
+  //  body: JSON.stringify({ intro, winner, loser })
+  //});
 
 
   await fetch("https://bit-brawls-backend.onrender.com/set-fight", {
