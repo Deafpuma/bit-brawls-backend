@@ -37,6 +37,7 @@ client.on('message', async (channel, tags, message, self) => {
       return client.say(channel, `🧨 ${username} challenges ${target}! Waiting for ${target} to type !accept...`);
     } else {
       client.say(channel, `📝 ${username} has entered the fight queue!`);
+      console.log(`[MATCH] Queue length: ${challengeQueue.length}`);
       tryStartFight();
     }
   }
@@ -194,7 +195,9 @@ async function runFight(fighterA, fighterB) {
 
   const winner = Math.random() > 0.5 ? fighterA.username : fighterB.username;
   const loser = winner === fighterA.username ? fighterB.username : fighterA.username;
-  const roast = roasts[Math.floor(Math.random() * roasts.length)].replace(fighterB.username, loser).replace(fighterA.username, winner);
+  const roast = roasts[Math.floor(Math.random() * roasts.length)]
+    .replace(fighterA.username, winner)
+    .replace(fighterB.username, loser);
 
   await sleep(1000);
   await client.say(channel, `🏆 ${winner} WINS! 💀 ${loser} has been KO'd!`);
