@@ -37,6 +37,14 @@ const koMessages = [
   "🏳️ {loser} just surrendered via emoji."
 ];
 
+function playSound(name, volume = 1.0) {
+  if (soundIsPlaying || overlayMuted) return;
+  const audio = new Audio(`sounds/${name}.mp3`);
+  audio.volume = volume;
+  audio.play();
+  soundIsPlaying = true;
+  audio.onended = () => soundIsPlaying = false;
+}
 
 function showGifOverlay(gifFile, duration = 2500) {
   const gif = document.createElement("img");
@@ -55,6 +63,10 @@ function triggerFightVisuals(intro, winner, loser) {
   const line = `${winner} lands a critical hit on ${loser}!`;
   log.innerHTML = `🥊 ${intro}<br>🏆 <strong>${winner}</strong> wins the fight!<br>${line}<br>${koLine}`;
 
+  playSound("StartingBell", 0.8);
+  setTimeout(() => playSound("swoosh-1", 0.8), 800);
+  setTimeout(() => playSound("5punchSound", 0.9), 1300);
+  setTimeout(() => playSound("swoosh-2", 0.7), 1700);
 
   const pow = document.createElement("div");
   pow.innerHTML = `<div class='pow-text'>💥 POW!</div>`;
@@ -71,11 +83,9 @@ function triggerFightVisuals(intro, winner, loser) {
 
 async function pollLatestFight() {
   try {
-    const res = await fetch("https://bit-brawls-backend.onrender.com/latest-fight");
-    //const res = await fetch("http://localhost:3005/latest-fight");
-
+    //const res = await fetch("https://bit-brawls-backend.onrender.com/latest-fight");
+    const res = await fetch("http://localhost:3005/latest-fight");
     if (res.status === 204) return;
-
     const data = await res.json();
     if (data.muted) overlayMuted = true;
     triggerFightVisuals(data.intro, data.winner, data.loser);

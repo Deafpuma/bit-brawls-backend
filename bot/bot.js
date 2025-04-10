@@ -210,7 +210,7 @@ async function runFight(fighterA, fighterB) {
   const finalMessage = `🏆 ${winner} WINS! 💀 ${loser} KO'd!\n${roast}`;
   await client.say(channel, finalMessage);
 
-  // Optionally send to overlay
+
   await fetch("https://bit-brawls-backend.onrender.com/set-fight", {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
