@@ -18,6 +18,9 @@ let pendingChallenges = {};
 let userBitWagers = {}; // Track user wager amounts
 let fightInProgress = false;
 
+let MAX_TIMEOUT_SECONDS = 60;
+
+
 client.on('message', async (channel, tags, message, self) => {
   if (self) return;
 
@@ -228,6 +231,27 @@ async function runFight(fighterA, fighterB) {
 
   const finalMessage = `🏆 ${winner} WINS! 💀 ${loser} KO'd!\n${roast}`;
   await client.say(channel, finalMessage);
+
+  const finalMessage = `🏆 ${winner} WINS! 💀 ${loser} KO'd!\n${roast}`;
+  await client.say(channel, finalMessage);
+
+  // 👊 Only timeout if both wagered bits
+  if (wagerA > 0 && wagerB > 0) {
+    const timeoutLength = Math.min(Math.max(wagerA, wagerB), MAX_TIMEOUT_SECONDS); 
+    await sleep(800);
+    await client.say(channel, `/timeout ${loser} ${timeoutLength}`);
+  }
+
+  if (msg.startsWith('!settimeout') && tags.badges?.broadcaster) {
+    const amount = parseInt(msg.split(" ")[1]);
+    if (!isNaN(amount) && amount > 0 && amount <= 600) {
+      MAX_TIMEOUT_SECONDS = amount;
+      client.say(channel, `⏱️ Max timeout has been set to ${amount} seconds.`);
+    } else {
+      client.say(channel, `❌ Please enter a valid number of seconds (1–600).`);
+    }
+  }
+
 
   delete userBitWagers[fighterA.username];
   delete userBitWagers[fighterB.username];
