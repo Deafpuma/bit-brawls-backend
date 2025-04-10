@@ -197,7 +197,6 @@ async function runFight(fighterA, fighterB) {
     `🦆 ${loser} waddled in, flew out. ${winner} wins.`,
     `📡 ${loser} caught signals from every direction — all bad.`
   ];
-
   const intro = intros[Math.floor(Math.random() * intros.length)];
   await client.say(channel, `🥊 ${intro}`);
   await sleep(1000);
@@ -221,15 +220,15 @@ async function runFight(fighterA, fighterB) {
   const winner = Math.random() > 0.5 ? fighterA.username : fighterB.username;
   const loser = winner === fighterA.username ? fighterB.username : fighterA.username;
 
-  const roast = roasts[Math.floor(Math.random() * roasts.length)]
-    .replace("${winner}", winner).replace("${loser}", loser);
+  const rawRoast = rawRoasts[Math.floor(Math.random() * rawRoasts.length)];
+  const roast = rawRoast.replace(/{winner}/g, winner).replace(/{loser}/g, loser);
 
-  const finalMessage = `🏆 ${winner} WINS! 💀 ${loser} KO'd!
-${roast}`;
+  const finalMessage = `🏆 ${winner} WINS! 💀 ${loser} KO'd!\n${roast}`;
   await client.say(channel, finalMessage);
 
   delete userBitWagers[fighterA.username];
   delete userBitWagers[fighterB.username];
+
 
 
   //await fetch('http://localhost:3005/set-fight', {
