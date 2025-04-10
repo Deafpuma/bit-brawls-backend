@@ -22,6 +22,10 @@ let MAX_TIMEOUT_SECONDS = 60;
 client.on('message', async (channel, tags, message, self) => {
   if (self) return;
 
+  const msg = message.trim().toLowerCase();
+  const username = tags['display-name'];
+
+  
   if (msg === '!help') {
     return client.say(channel, `📖 Commands: 
   !bitbrawl — Join the fight queue. 
@@ -34,9 +38,6 @@ client.on('message', async (channel, tags, message, self) => {
   !settimeout <sec> — Set max timeout after KO (broadcaster only).`);
   }
   
-
-  const msg = message.trim().toLowerCase();
-  const username = tags['display-name'];
 
   // 🔧 Let broadcaster set max timeout
   if (msg.startsWith('!settimeout') && tags.badges?.broadcaster) {
