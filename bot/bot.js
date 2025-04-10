@@ -14,7 +14,8 @@ client.connect().then(() => {
 }).catch(console.error);
 
 let challengeQueue = [];
-let pendingChallenges = {}; // map of target: challenger
+let pendingChallenges = {};
+let fightInProgress = false;
 
 client.on('message', async (channel, tags, message, self) => {
   if (self) return;
@@ -24,7 +25,7 @@ client.on('message', async (channel, tags, message, self) => {
 
   if (msg.startsWith('!brawl')) {
     const args = msg.split(' ');
-    const target = args[1]?.replace("@", "").toLowerCase();
+    const target = args[1]?.replace('@', '').toLowerCase();
 
     if (challengeQueue.find(u => u.username.toLowerCase() === username.toLowerCase())) {
       return client.say(channel, `⚠️ ${username} is already in the fight queue.`);
@@ -37,9 +38,9 @@ client.on('message', async (channel, tags, message, self) => {
       return client.say(channel, `🧨 ${username} challenges ${target}! Waiting for ${target} to type !accept...`);
     }
 
-    // Normal entry (no target)
     challengeQueue.push(challenger);
     client.say(channel, `📝 ${username} has entered the fight queue (vs anyone brave enough)`);
+
     tryStartFight();
   }
 
@@ -49,14 +50,17 @@ client.on('message', async (channel, tags, message, self) => {
 
     if (challenger) {
       delete pendingChallenges[accepter];
+      challengeQueue = challengeQueue.filter(c => c.username !== challenger.username);
       const opponent = { username, target: null, paid: true };
-      client.say(channel, `⚔️ ${username} accepted the challenge from ${challenger.username}! Let the brawl begin!`);
+
+      client.say(channel, `⚔️ ${username} accepted the challenge from ${challenger.username}!`);
       runFight(challenger, opponent);
     }
   }
 });
 
 function tryStartFight() {
+  if (fightInProgress) return;
   if (challengeQueue.length >= 2) {
     const [a, b] = challengeQueue.splice(0, 2);
     runFight(a, b);
@@ -64,6 +68,8 @@ function tryStartFight() {
 }
 
 async function runFight(fighterA, fighterB) {
+  fightInProgress = true;
+
   const channel = 'Deafpuma';
   const sleep = ms => new Promise(res => setTimeout(res, ms));
 
@@ -123,7 +129,7 @@ async function runFight(fighterA, fighterB) {
   ];
 
   const roasts = [
-   `💥 ${loser} got folded like a lawn chair by ${winner}!`,
+    `💥 ${loser} got folded like a lawn chair by ${winner}!`,
     `🔥 ${loser} is the human equivalent of a participation trophy. Good try I guess.`,
     `⚰️ RIP ${loser} — ${winner} said "sit down."`,
     `💣 ${winner} KO’d ${loser} with a flying elbow!`,
@@ -178,7 +184,6 @@ async function runFight(fighterA, fighterB) {
     `🌮 ${loser} got crunched like a bad taco.`,
     `🦆 ${loser} waddled in, flew out. ${winner} wins.`,
     `📡 ${loser} caught signals from every direction — all bad.`
-
   ];
 
   const intro = intros[Math.floor(Math.random() * intros.length)];
@@ -186,9 +191,13 @@ async function runFight(fighterA, fighterB) {
   await sleep(1000);
 
   if (fighterA.paid && !fighterB.paid) {
-    return client.say(channel, `💰 ${fighterB.username} didn't match Bits — ${fighterA.username} auto-wins!`);
+    await client.say(channel, `💰 ${fighterB.username} didn't match Bits — ${fighterA.username} auto-wins!`);
+    fightInProgress = false;
+    return;
   } else if (!fighterA.paid && fighterB.paid) {
-    return client.say(channel, `💰 ${fighterA.username} didn't match Bits — ${fighterB.username} auto-wins!`);
+    await client.say(channel, `💰 ${fighterA.username} didn't match Bits — ${fighterB.username} auto-wins!`);
+    fightInProgress = false;
+    return;
   }
 
   await client.say(channel, `🎲 Both wagered — it's a 50/50!`);
@@ -197,18 +206,18 @@ async function runFight(fighterA, fighterB) {
   const winner = Math.random() > 0.5 ? fighterA.username : fighterB.username;
   const loser = winner === fighterA.username ? fighterB.username : fighterA.username;
   const roast = roasts[Math.floor(Math.random() * roasts.length)]
-    .replace(/\${winner}/g, winner)
-    .replace(/\${loser}/g, loser)
-    .replace("{winner}", winner)
-    .replace("{loser}", loser);
+    .replace(/\${winner}/g, winner).replace(/\${loser}/g, loser)
+    .replace("{winner}", winner).replace("{loser}", loser);
 
   const finalMessage = `🏆 ${winner} WINS! 💀 ${loser} KO'd!\n${roast}`;
   await client.say(channel, finalMessage);
 
-  // Optionally: trigger overlay
+  // Optionally send to overlay
   await fetch("https://bit-brawls-backend.onrender.com/set-fight", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ intro, winner, loser })
   }).catch(err => console.warn("⚠️ Overlay error:", err.message));
+
+  fightInProgress = false;
 }
