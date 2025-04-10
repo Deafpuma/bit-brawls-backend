@@ -15,11 +15,22 @@ client.connect().then(() => {
 
 let challengeQueue = [];
 let pendingChallenges = {};
-let userBitWagers = {}; // Track user wager amounts
+let userBitWagers = {}; 
 let fightInProgress = false;
-
 let MAX_TIMEOUT_SECONDS = 60;
 
+// 🔧 Allow streamer to set max timeout dynamically
+if (msg.startsWith('!settimeout') && tags.badges?.broadcaster) {
+  const parts = msg.split(' ');
+  const amount = parseInt(parts[1]);
+
+  if (!isNaN(amount) && amount > 0 && amount <= 600) {
+    MAX_TIMEOUT_SECONDS = amount;
+    return client.say(channel, `⏱️ Timeout duration set to ${amount} seconds.`);
+  } else {
+    return client.say(channel, `❌ Please enter a valid timeout between 1–600 seconds.`);
+  }
+}
 
 client.on('message', async (channel, tags, message, self) => {
   if (self) return;
@@ -233,28 +244,19 @@ async function runFight(fighterA, fighterB) {
   await client.say(channel, finalMessage);
 
 
-  // 👊 Only timeout if both wagered bits
+
+  // Only timeout if both players wagered
   if (wagerA > 0 && wagerB > 0) {
-    const timeoutLength = Math.min(Math.max(wagerA, wagerB), MAX_TIMEOUT_SECONDS); 
+    const timeoutDuration = Math.min(Math.max(wagerA, wagerB), MAX_TIMEOUT_SECONDS);
     await sleep(800);
-    await client.say(channel, `/timeout ${loser} ${timeoutLength}`);
+    await client.say(channel, `/timeout ${loser} ${timeoutDuration}`);
   }
 
-  if (msg.startsWith('!settimeout') && tags.badges?.broadcaster) {
-    const amount = parseInt(msg.split(" ")[1]);
-    if (!isNaN(amount) && amount > 0 && amount <= 600) {
-      MAX_TIMEOUT_SECONDS = amount;
-      client.say(channel, `⏱️ Max timeout has been set to ${amount} seconds.`);
-    } else {
-      client.say(channel, `❌ Please enter a valid number of seconds (1–600).`);
-    }
-  }
 
+  
 
   delete userBitWagers[fighterA.username];
   delete userBitWagers[fighterB.username];
-
-
 
   //await fetch('http://localhost:3005/set-fight', {
   //  method: "POST",
