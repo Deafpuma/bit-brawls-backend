@@ -39,8 +39,6 @@ client.on('message', async (channel, tags, message, self) => {
     }
 
     challengeQueue.push(challenger);
-    client.say(channel, `📝 ${username} has entered the fight queue (vs anyone brave enough)`);
-
     tryStartFight();
   }
 
