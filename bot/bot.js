@@ -140,6 +140,31 @@ async function runFight(fighterA, fighterB) {
     `${fighterA.username} just unplugged the router to gain an advantage over ${fighterB.username}.`
   ];
 
+
+  const intro = intros[Math.floor(Math.random() * intros.length)];
+  await client.say(channel, `🥊 ${intro}`);
+  await sleep(1000);
+
+  const wagerA = userBitWagers[fighterA.username] || 0;
+  const wagerB = userBitWagers[fighterB.username] || 0;
+
+  if (wagerA && !wagerB) {
+    await client.say(channel, `💰 ${fighterB.username} didn't match the wager — ${fighterA.username} auto-wins!`);
+    fightInProgress = false;
+    return;
+  } else if (!wagerA && wagerB) {
+    await client.say(channel, `💰 ${fighterA.username} didn't match the wager — ${fighterB.username} auto-wins!`);
+    fightInProgress = false;
+    return;
+  }
+
+  await client.say(channel, `🎲 ${fighterA.username} wagered ${wagerA} Bits vs ${fighterB.username} wagered ${wagerB} Bits! It's on!`);
+  await sleep(1000);
+
+  const winner = Math.random() > 0.5 ? fighterA.username : fighterB.username;
+  const loser = winner === fighterA.username ? fighterB.username : fighterA.username;
+
+
   const roasts = [
     `💥 ${loser} got folded like a lawn chair by ${winner}!`,
     `🔥 ${loser} is the human equivalent of a participation trophy. Good try I guess.`,
@@ -197,28 +222,6 @@ async function runFight(fighterA, fighterB) {
     `🦆 ${loser} waddled in, flew out. ${winner} wins.`,
     `📡 ${loser} caught signals from every direction — all bad.`
   ];
-  const intro = intros[Math.floor(Math.random() * intros.length)];
-  await client.say(channel, `🥊 ${intro}`);
-  await sleep(1000);
-
-  const wagerA = userBitWagers[fighterA.username] || 0;
-  const wagerB = userBitWagers[fighterB.username] || 0;
-
-  if (wagerA && !wagerB) {
-    await client.say(channel, `💰 ${fighterB.username} didn't match the wager — ${fighterA.username} auto-wins!`);
-    fightInProgress = false;
-    return;
-  } else if (!wagerA && wagerB) {
-    await client.say(channel, `💰 ${fighterA.username} didn't match the wager — ${fighterB.username} auto-wins!`);
-    fightInProgress = false;
-    return;
-  }
-
-  await client.say(channel, `🎲 ${fighterA.username} wagered ${wagerA} Bits vs ${fighterB.username} wagered ${wagerB} Bits! It's on!`);
-  await sleep(1000);
-
-  const winner = Math.random() > 0.5 ? fighterA.username : fighterB.username;
-  const loser = winner === fighterA.username ? fighterB.username : fighterA.username;
 
   const rawRoast = rawRoasts[Math.floor(Math.random() * rawRoasts.length)];
   const roast = rawRoast.replace(/{winner}/g, winner).replace(/{loser}/g, loser);
