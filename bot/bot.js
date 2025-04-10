@@ -19,25 +19,24 @@ let userBitWagers = {};
 let fightInProgress = false;
 let MAX_TIMEOUT_SECONDS = 60;
 
-
-
 client.on('message', async (channel, tags, message, self) => {
-  const msg = message.trim().toLowerCase();
-
-// 🔧 Allow streamer to set max timeout dynamically
-if (msg.startsWith('!settimeout') && tags.badges?.broadcaster) {
-  const parts = msg.split(' ');
-  const amount = parseInt(parts[1]);
-
-  if (!isNaN(amount) && amount > 0 && amount <= 600) {
-    MAX_TIMEOUT_SECONDS = amount;
-    return client.say(channel, `⏱️ Timeout duration set to ${amount} seconds.`);
-  } else {
-    return client.say(channel, `❌ Please enter a valid timeout between 1–600 seconds.`);
-  }
-
   if (self) return;
 
+  const msg = message.trim().toLowerCase();
+  const username = tags['display-name'];
+
+  // 🔧 Let broadcaster set max timeout
+  if (msg.startsWith('!settimeout') && tags.badges?.broadcaster) {
+    const parts = msg.split(' ');
+    const amount = parseInt(parts[1]);
+
+    if (!isNaN(amount) && amount > 0 && amount <= 600) {
+      MAX_TIMEOUT_SECONDS = amount;
+      return client.say(channel, `⏱️ Timeout duration set to ${amount} seconds.`);
+    } else {
+      return client.say(channel, `❌ Please enter a valid timeout between 1–600 seconds.`);
+    }
+  }
   const username = tags['display-name'];
   const msg = message.trim().toLowerCase();
 
