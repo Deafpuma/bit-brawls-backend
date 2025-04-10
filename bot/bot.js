@@ -232,8 +232,6 @@ async function runFight(fighterA, fighterB) {
   const finalMessage = `🏆 ${winner} WINS! 💀 ${loser} KO'd!\n${roast}`;
   await client.say(channel, finalMessage);
 
-  const finalMessage = `🏆 ${winner} WINS! 💀 ${loser} KO'd!\n${roast}`;
-  await client.say(channel, finalMessage);
 
   // 👊 Only timeout if both wagered bits
   if (wagerA > 0 && wagerB > 0) {
