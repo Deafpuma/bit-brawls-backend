@@ -37,8 +37,6 @@ client.on('message', async (channel, tags, message, self) => {
       return client.say(channel, `❌ Please enter a valid timeout between 1–600 seconds.`);
     }
   }
-  const username = tags['display-name'];
-  const msg = message.trim().toLowerCase();
 
   // 💥 Handle !bitbrawl
   if (msg.startsWith('!bitbrawl')) {
