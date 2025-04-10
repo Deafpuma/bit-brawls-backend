@@ -1,5 +1,5 @@
+
 let userId = null;
-let viewerName = null;
 let fightInProgress = false;
 let soundIsPlaying = false;
 let overlayMuted = false;
@@ -60,33 +60,7 @@ function triggerFightVisuals(intro, winner, loser) {
 
   const log = document.getElementById("fight-log");
   const koLine = koMessages[Math.floor(Math.random() * koMessages.length)].replace("{loser}", loser);
-  const trashTalk = [
-    `${loser} got folded like a lawn chair by ${winner}!`,
-    `${winner} drop-kicked ${loser} into the void.`,
-    `RIP ${loser} — ${winner} showed them a mirror.`,
-    `${loser} got hit so weak it felt like a baby slap!`,
-    `${winner} just KO’d ${loser} with a flying elbow!`,
-    `${winner} hit ${loser} so hard they installed updates.`,
-    `${loser} just got KO’d into next week's stream.`,
-    `${winner} drop-kicked ${loser} out of their overlay.`,
-    `${loser} is now trending on #KOFail.`,
-    `${winner} just made ${loser} a tutorial clip.`,
-    `${loser} got outplayed, outpaced, and ouch.`,
-    `${winner} made that look easy. ${loser}, not so much.`,
-    `${loser} was last seen flying through the chat.`,
-    `${winner} embarrassed ${loser} in front of 12 viewers and a cat.`,
-    `${loser} is rebooting... please wait.`,
-    `${winner} earned a badge: Stream KO Master.`,
-    `${loser} unplugged mid-match. Or just panicked.`,
-    `${winner} just hit ${loser} with the power of bad WiFi.`,
-    `${winner} didn’t even break a sweat. ${loser} did.`,
-    `${loser} got combo’d into Twitch obscurity.`,
-    `${winner} just ran a tutorial... and ${loser} was the dummy.`,
-    `${winner} wins again! ${loser} is in timeout.`,
-    `${loser} got bodied so hard it hit the backend.`,
-    `${winner} activated god mode. ${loser} was not ready.`
-  ];
-  const line = trashTalk[Math.floor(Math.random() * trashTalk.length)];
+  const line = `${winner} lands a critical hit on ${loser}!`;
   log.innerHTML = `🥊 ${intro}<br>🏆 <strong>${winner}</strong> wins the fight!<br>${line}<br>${koLine}`;
 
   playSound("StartingBell", 0.8);
@@ -99,15 +73,6 @@ function triggerFightVisuals(intro, winner, loser) {
   document.getElementById("container").appendChild(pow);
   setTimeout(() => pow.remove(), 1500);
 
-  if (line.includes("baby")) {
-    setTimeout(() => playSound("baby-laughing", 0.8), 1800);
-    setTimeout(() => playSound("SillyWin", 0.8), 2500);
-  } else {
-    const koSounds = ["KO_GameSound", "KO_boring", "QuickLoudCheer", "SADAH"];
-    const chosen = koSounds[Math.floor(Math.random() * koSounds.length)];
-    setTimeout(() => playSound(chosen, 0.9), 2200);
-  }
-
   setTimeout(() => {
     const gifs = ["BitPOW.gif", "BitBoom.gif", "KO_Gif.gif"];
     showGifOverlay(gifs[Math.floor(Math.random() * gifs.length)], 2500);
@@ -118,7 +83,7 @@ function triggerFightVisuals(intro, winner, loser) {
 
 async function pollLatestFight() {
   try {
-    const res = await fetch("https://bit-brawls-backend.onrender.com/latest-fight");
+    const res = await fetch("http://localhost:3005/latest-fight");
     if (!res.ok) return;
     const data = await res.json();
     if (data.muted) overlayMuted = true;

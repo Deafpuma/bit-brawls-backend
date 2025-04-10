@@ -14,52 +14,46 @@ client.connect().then(() => {
 }).catch(console.error);
 
 let challengeQueue = [];
-let activeChallenge = null;
+let pendingChallenges = {}; // store per-target acceptance
 
 client.on('message', async (channel, tags, message, self) => {
   if (self) return;
-
   const username = tags['display-name'];
   const msg = message.trim().toLowerCase();
 
   if (msg.startsWith('!brawl')) {
-    const args = message.split(" ");
-    const target = args[1]?.replace("@", "").toLowerCase();
+    const parts = msg.split(' ');
+    const target = parts[1]?.replace('@', '').toLowerCase();
 
     if (challengeQueue.find(u => u.username.toLowerCase() === username.toLowerCase())) {
       return client.say(channel, `⚠️ ${username} is already in the fight queue.`);
     }
 
-    const paid = true;
-    const challenge = { username, target: target || null, paid };
-    challengeQueue.push(challenge);
+    const challenger = { username, target: target || null, paid: true };
+    challengeQueue.push(challenger);
 
     if (target && target !== username.toLowerCase()) {
-      activeChallenge = challenge;
+      pendingChallenges[target] = challenger;
       return client.say(channel, `🧨 ${username} challenges ${target}! Waiting for ${target} to type !accept...`);
+    } else {
+      client.say(channel, `📝 ${username} has entered the fight queue!`);
+      tryStartFight();
     }
-
-    client.say(channel, `🧨 ${username} enters the fight (wagering Bits!)`);
-    matchGeneric();
   }
 
-  if (msg === '!accept' && activeChallenge) {
-    const responder = username.toLowerCase();
-    if (responder === activeChallenge.target) {
-      const challenger = activeChallenge;
-      activeChallenge = null;
-
-      client.say(channel, `⚔️ ${username} accepted the challenge from ${challenger.username}! Let the brawl begin!`);
-
-      challengeQueue = challengeQueue.filter(u => u.username !== challenger.username);
-      const opponent = { username, target: null, paid: true };
-
-      runFight(challenger, opponent);
+  if (msg === '!accept') {
+    const accepter = username.toLowerCase();
+    const challenger = pendingChallenges[accepter];
+    if (challenger) {
+      delete pendingChallenges[accepter];
+      challengeQueue = challengeQueue.filter(c => c.username !== challenger.username);
+      client.say(channel, `⚔️ ${username} accepted the challenge from ${challenger.username}!`);
+      runFight(challenger, { username, target: null, paid: true });
     }
   }
 });
 
-function matchGeneric() {
+function tryStartFight() {
   if (challengeQueue.length >= 2) {
     const [a, b] = challengeQueue.splice(0, 2);
     runFight(a, b);
@@ -68,7 +62,7 @@ function matchGeneric() {
 
 async function runFight(fighterA, fighterB) {
   const channel = 'Deafpuma';
-  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const sleep = ms => new Promise(res => setTimeout(res, ms));
 
   const intros = [
     `${fighterA.username} challenges ${fighterB.username} with one shoe missing but he's ready to go!`,
@@ -181,10 +175,10 @@ async function runFight(fighterA, fighterB) {
     `🌮 ${loser} got crunched like a bad taco.`,
     `🦆 ${loser} waddled in, flew out. ${winner} wins.`,
     `📡 ${loser} caught signals from every direction — all bad.`
+
   ];
 
   const intro = intros[Math.floor(Math.random() * intros.length)];
-
   await client.say(channel, `🥊 ${intro}`);
   await sleep(1000);
 
@@ -200,23 +194,16 @@ async function runFight(fighterA, fighterB) {
 
   const winner = Math.random() > 0.5 ? fighterA.username : fighterB.username;
   const loser = winner === fighterA.username ? fighterB.username : fighterA.username;
-  const roastLine = roasts[Math.floor(Math.random() * roasts.length)]
-    .replace(`${fighterA.username}`, winner)
-    .replace(`${fighterB.username}`, loser);
+  const roast = roasts[Math.floor(Math.random() * roasts.length)].replace(fighterB.username, loser).replace(fighterA.username, winner);
 
   await sleep(1000);
   await client.say(channel, `🏆 ${winner} WINS! 💀 ${loser} has been KO'd!`);
   await sleep(800);
-  await client.say(channel, roastLine);
-
-  if (fighterA.paid && fighterB.paid) {
-    await sleep(800);
-    await client.say(channel, `/timeout ${loser} 60`);
-  }
+  await client.say(channel, roast);
 
   await fetch('http://localhost:3005/set-fight', {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ intro, winner, loser })
-  }).catch(err => console.warn("⚠️ Failed to trigger overlay:", err.message));
+  }).catch(err => console.warn("Overlay not responding:", err.message));
 }
