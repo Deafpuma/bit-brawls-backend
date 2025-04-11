@@ -260,12 +260,11 @@ async function runFight(fighterA, fighterB) {
     await sleep(800);
     if (loserLogin) {
       try {
-        await client.say(channel, `/timeout @${loserLogin} ${timeoutDuration} KO'd in Bit Brawls`);
+        await client.timeout(channel, loserLogin, timeoutDuration, `KO'd in Bit Brawls`);
       } catch (err) {
         console.warn("⚠️ Timeout failed:", err.message);
       }
     }
-  }
 
   delete userBitWagers[fighterA.username];
   delete userBitWagers[fighterB.username];
