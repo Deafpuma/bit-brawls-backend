@@ -1,4 +1,4 @@
-const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+""const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const tmi = require('tmi.js');
 
 const client = new tmi.Client({
@@ -14,41 +14,60 @@ client.connect().then(() => {
 }).catch(console.error);
 
 let challengeQueue = [];
-let pendingChallenges = {};
+let pendingChallenges = {}; // { targetUsername: { username: challenger, bits: amount } }
 let userBitWagers = {};
-let userLoginMap = {}; // Store login name for accurate timeout
+let userLoginMap = {}; // Store login name for timeouts
 let fightInProgress = false;
 let MAX_TIMEOUT_SECONDS = 60;
 
 client.on('message', async (channel, tags, message, self) => {
   if (self) return;
 
-  const msg = message.trim().toLowerCase();
+  const msg = message.trim();
   const username = tags['display-name'];
   const login = tags.username;
   userLoginMap[username] = login;
+  const lowerMsg = msg.toLowerCase();
 
-  if (msg === '!help') {
-    return client.say(channel, `📖 Commands: !bitbrawl — Join the queue. !bitbrawl @user — Challenge a user. !bitbrawl @user <bits> — Challenge + wager. !bitbrawl <bits> — Join queue with a wager. !bits <amount> — Set or update your wager. !mybet — View wager. !settimeout <sec> — Set max KO timeout (broadcaster only).`);
+  if (lowerMsg === '!help') {
+    return client.say(channel, `📖 Commands: !bitbrawl — Join queue. !bitbrawl @user — Challenge. !bitbrawl <bits> — Join with wager. !bitbrawl @user <bits> — Challenge + wager. !bitbrawl accept <user> — Accept challenge. !bits <amount> — Set wager. !mybet — Check wager. !settimeout <sec> — Set max timeout (broadcaster only).`);
   }
 
-  if (msg.startsWith('!settimeout') && tags.badges?.broadcaster) {
+  if (lowerMsg.startsWith('!settimeout') && tags.badges?.broadcaster) {
     const parts = msg.split(' ');
     const amount = parseInt(parts[1]);
     if (!isNaN(amount) && amount >= 5 && amount <= 600) {
       MAX_TIMEOUT_SECONDS = amount;
-      return client.say(channel, `⏱️ Timeout duration set to ${amount} seconds.`);
+      return client.say(channel, `⏱️ Timeout set to ${amount} seconds.`);
     } else {
-      return client.say(channel, `❌ Must be between 5 and 600 seconds.`);
+      return client.say(channel, `❌ Must be between 5–600 seconds.`);
     }
   }
 
-  if (msg.startsWith('!mybet')) {
+  if (lowerMsg.startsWith('!mybet')) {
     const bet = userBitWagers[username] || 0;
     return client.say(channel, `💰 ${username}, your wager is ${bet} Bits.`);
   }
 
-  if (msg.startsWith('!bitbrawl')) {
+  // Accepting a challenge
+  if (lowerMsg.startsWith('!bitbrawl accept')) {
+    const parts = msg.split(' ');
+    const target = parts[2]?.toLowerCase();
+    if (pendingChallenges[username.toLowerCase()]?.username.toLowerCase() === target) {
+      const challenger = pendingChallenges[username.toLowerCase()];
+      delete pendingChallenges[username.toLowerCase()];
+      challengeQueue = challengeQueue.filter(c => c.username !== challenger.username);
+      const opponent = { username, target: null, paid: true };
+      client.say(channel, `⚔️ ${username} accepted the challenge from ${challenger.username}!`);
+      runFight(challenger, opponent);
+      return;
+    } else {
+      return client.say(channel, `⚠️ No challenge found from ${target}.`);
+    }
+  }
+
+  // Handle joining or challenging
+  if (lowerMsg.startsWith('!bitbrawl')) {
     const args = msg.split(' ');
     let target = null;
     let bitWager = 0;
@@ -56,7 +75,7 @@ client.on('message', async (channel, tags, message, self) => {
     for (const arg of args.slice(1)) {
       if (!isNaN(parseInt(arg))) bitWager = parseInt(arg);
       else if (arg.startsWith('@')) target = arg.slice(1).toLowerCase();
-      else target = arg.toLowerCase();
+      else if (arg !== 'accept') target = arg.toLowerCase();
     }
 
     if (bitWager < 5) bitWager = 5;
@@ -70,41 +89,27 @@ client.on('message', async (channel, tags, message, self) => {
 
     if (target && target !== username.toLowerCase()) {
       pendingChallenges[target] = challenger;
-      return client.say(channel, `🧨 ${username} challenges ${target}! Waiting for ${target} to type !accept...`);
+      return client.say(channel, `🧨 ${username} challenges ${target}! Waiting for ${target} to type !bitbrawl accept ${username}`);
     }
 
     challengeQueue.push(challenger);
     client.say(channel, `📝 ${username} enters the fight queue (vs anyone brave enough) with ${bitWager} Bits.`);
     tryStartFight();
   }
-
-  if (msg === '!accept') {
-    const accepter = username.toLowerCase();
-    const challenger = pendingChallenges[accepter];
-    if (challenger) {
-      delete pendingChallenges[accepter];
-      challengeQueue = challengeQueue.filter(c => c.username !== challenger.username);
-      const opponent = { username, target: null, paid: true };
-      client.say(channel, `⚔️ ${username} accepted the challenge from ${challenger.username}!`);
-      runFight(challenger, opponent);
-    }
-  }
 });
 
 function tryStartFight() {
   if (fightInProgress || challengeQueue.length < 2) return;
-
   const a = challengeQueue.shift();
   const bIndex = challengeQueue.findIndex(f => !f.target || f.target === a.username.toLowerCase());
-
   if (bIndex === -1) {
     challengeQueue.unshift(a);
     return;
   }
-
   const b = challengeQueue.splice(bIndex, 1)[0];
   runFight(a, b);
 }
+
 
 async function runFight(fighterA, fighterB) {
   fightInProgress = true;
@@ -254,6 +259,7 @@ async function runFight(fighterA, fighterB) {
   const finalMessage = `🏆 ${winner} WINS! 💀 ${loser} KO'd! ${roast}`;
   await client.say(channel, finalMessage);
 
+  // Timeout if both wagered
   if (wagerA > 0 && wagerB > 0) {
     const timeoutDuration = Math.min(Math.max(Math.max(wagerA, wagerB), 5), MAX_TIMEOUT_SECONDS);
     const loserLogin = userLoginMap[loser];
