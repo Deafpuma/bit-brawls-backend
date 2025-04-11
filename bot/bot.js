@@ -194,6 +194,12 @@ async function runFight(fighterA, fighterB) {
   const winner = Math.random() > 0.5 ? fighterA.username : fighterB.username;
   const loser = winner === fighterA.username ? fighterB.username : fighterA.username;
 
+  const timeoutDuration = Math.min(Math.max(Math.max(wagerA, wagerB), 5), MAX_TIMEOUT_SECONDS);
+   
+  //await client.timeout(channel, loser, timeoutDuration, `KO'd in Bit Brawls`);
+  //await client.say(channel, `/timeout ${loser} ${timeoutDuration} KO'd in Bit Brawls`);
+
+
   const roasts = [
     `💥 ${loser} got folded like a lawn chair by ${winner}!`,
     `🔥 ${loser} is the human equivalent of a participation trophy. Good try I guess.`,
@@ -255,25 +261,11 @@ async function runFight(fighterA, fighterB) {
   const rawRoast = roasts[Math.floor(Math.random() * roasts.length)];
   const roast = rawRoast.replace(/{winner}/g, winner).replace(/{loser}/g, loser);
 
-
-  // Timeout if both wagered
-  if (wagerA > 0 && wagerB > 0) {
-    const timeoutDuration = Math.min(Math.max(Math.max(wagerA, wagerB), 5), MAX_TIMEOUT_SECONDS);
-    const loserLogin = userLoginMap[loser];
-    await sleep(800);
-    if (loserLogin) {
-      try {
-        await client.timeout(channel, loserLogin, timeoutDuration, `KO'd in Bit Brawls`);
-      } catch (err) {
-        console.warn("⚠️ Timeout failed:", err.message);
-      }
-    }
-  }
-  const timeoutDuration = Math.min(Math.max(Math.max(wagerA, wagerB), 5), MAX_TIMEOUT_SECONDS);
-
-  const finalMessage = `🏆 ${winner} WINS! 💀 ${loser} KO'd! ${roast}..../timeout ${loser} timeoutDuration lost fight!`;
+  
+  const finalMessage = `🏆 ${winner} WINS! 💀 ${loser} KO'd! ${roast}`;
   await client.say(channel, finalMessage);
-
+  await client.say(channel, `/timeout ${loser} ${timeoutDuration} KO'd in Bit Brawls`);
+ 
   delete userBitWagers[fighterA.username];
   delete userBitWagers[fighterB.username];
 
