@@ -16,6 +16,7 @@ client.connect().then(() => {
 let challengeQueue = [];
 let pendingChallenges = {};
 let userBitWagers = {};
+let userLoginMap = {}; // Store login name for accurate timeout
 let fightInProgress = false;
 let MAX_TIMEOUT_SECONDS = 60;
 
@@ -24,9 +25,11 @@ client.on('message', async (channel, tags, message, self) => {
 
   const msg = message.trim().toLowerCase();
   const username = tags['display-name'];
+  const login = tags.username; // lowercase login name
+  userLoginMap[username] = login;
 
   if (msg === '!help') {
-    return client.say(channel, `📖 Commands: !bitbrawl — Join the queue. !bitbrawl @user — Challenge a user. !bitbrawl @user <bits> — Challenge + wager. !bitbrawl <bits> — Join queue with a wager. !bits <amount> — Set or update your wager. !mybet — View wager. !settimeout <sec> — Set max KO timeout (broadcaster only).`);
+    return client.say(channel, `📖 Commands: !bitbrawl — Join the queue. !bitbrawl @user — Challenge a user. !bitbrawl @user <bits> — Challenge + wager. !bitbrawl <bits> — Join queue with a wager. !mybet — View wager. !settimeout <sec> — Set max KO timeout (broadcaster only).`);
   }
 
   if (msg.startsWith('!settimeout') && tags.badges?.broadcaster) {
@@ -102,7 +105,6 @@ function tryStartFight() {
   const b = challengeQueue.splice(bIndex, 1)[0];
   runFight(a, b);
 }
-
 
 async function runFight(fighterA, fighterB) {
   fightInProgress = true;
@@ -257,9 +259,12 @@ async function runFight(fighterA, fighterB) {
 
   if (wagerA > 0 && wagerB > 0) {
     const timeoutDuration = Math.min(Math.max(Math.max(wagerA, wagerB), 5), MAX_TIMEOUT_SECONDS);
+    const loserLogin = userLoginMap[loser];
     await sleep(800);
-    await client.timeout(channel, loser, timeoutDuration, `KO'd in Bit Brawls`)
-      .catch(err => console.warn("⚠️ Timeout failed:", err.message));
+    if (loserLogin) {
+      await client.timeout(channel, loserLogin, timeoutDuration, `KO'd in Bit Brawls`)
+        .catch(err => console.warn("⚠️ Timeout failed:", err.message));
+    }
   }
 
   delete userBitWagers[fighterA.username];
