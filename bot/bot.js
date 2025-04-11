@@ -190,7 +190,6 @@ async function runFight(fighterA, fighterB) {
   const winner = Math.random() > 0.5 ? fighterA.username : fighterB.username;
   const loser = winner === fighterA.username ? fighterB.username : fighterA.username;
 
-
   const roasts = [
     `💥 ${loser} got folded like a lawn chair by ${winner}!`,
     `🔥 ${loser} is the human equivalent of a participation trophy. Good try I guess.`,
@@ -252,7 +251,7 @@ async function runFight(fighterA, fighterB) {
   const rawRoast = roasts[Math.floor(Math.random() * roasts.length)];
   const roast = rawRoast.replace(/{winner}/g, winner).replace(/{loser}/g, loser);
 
-  const finalMessage = `🏆 ${winner} WINS! 💀 ${loser} KO'd!\n${roast}`;
+  const finalMessage = `🏆 ${winner} WINS! 💀 ${loser} KO'd! ${roast}`;
   await client.say(channel, finalMessage);
 
   if (wagerA > 0 && wagerB > 0) {
@@ -260,7 +259,11 @@ async function runFight(fighterA, fighterB) {
     const loserLogin = userLoginMap[loser];
     await sleep(800);
     if (loserLogin) {
-      await client.timeout(channel, loserLogin, timeoutDuration, `KO'd in Bit Brawls`).catch(err => console.warn("⚠️ Timeout failed:", err.message));
+      try {
+        await client.say(channel, `/timeout @${loserLogin} ${timeoutDuration} KO'd in Bit Brawls`);
+      } catch (err) {
+        console.warn("⚠️ Timeout failed:", err.message);
+      }
     }
   }
 
