@@ -29,8 +29,8 @@ client.on('message', async (channel, tags, message, self) => {
   userLoginMap[username] = login;
   const lowerMsg = msg.toLowerCase();
 
-  if (lowerMsg === '!help') {
-    return client.say(channel, `📖 Commands: !bitbrawl — Join queue. !bitbrawl @user — Challenge. !bitbrawl <bits> — Join with wager. !bitbrawl @user <bits> — Challenge + wager. !bitbrawl accept <user> — Accept challenge. !bits <amount> — Set wager. !mybet — Check wager. !settimeout <sec> — Set max timeout (broadcaster only).`);
+  if (lowerMsg === '!bbhelp') {
+    return client.say(channel, `📖 Commands: !bitbrawl — Join queue. !bitbrawl @user — Challenge. !bitbrawl <bits> — Join with wager. !bitbrawl @user <bits> — Challenge + wager. !bbaccept <user> — Accept challenge. !bits <amount> — Set wager. !mybet — Check wager. !settimeout <sec> — Set max timeout (broadcaster only).`);
   }
 
   if (lowerMsg.startsWith('!settimeout') && tags.badges?.broadcaster) {
@@ -50,9 +50,9 @@ client.on('message', async (channel, tags, message, self) => {
   }
 
   // Accepting a challenge
-  if (lowerMsg.startsWith('!bitbrawl accept')) {
+  if (lowerMsg.startsWith('!bbaccept')) {
     const parts = msg.split(' ');
-    const target = parts[2]?.toLowerCase();
+    const target = parts[1]?.toLowerCase();
     if (pendingChallenges[username.toLowerCase()]?.username.toLowerCase() === target) {
       const challenger = pendingChallenges[username.toLowerCase()];
       delete pendingChallenges[username.toLowerCase()];
@@ -89,7 +89,7 @@ client.on('message', async (channel, tags, message, self) => {
 
     if (target && target !== username.toLowerCase()) {
       pendingChallenges[target] = challenger;
-      return client.say(channel, `🧨 ${username} challenges ${target}! Waiting for ${target} to type !bitbrawl accept ${username}`);
+      return client.say(channel, `🧨 ${username} challenges ${target}! Waiting for ${target} to type !bbaccept ${username}`);
     }
 
     challengeQueue.push(challenger);
@@ -109,7 +109,6 @@ function tryStartFight() {
   const b = challengeQueue.splice(bIndex, 1)[0];
   runFight(a, b);
 }
-
 
 async function runFight(fighterA, fighterB) {
   fightInProgress = true;
