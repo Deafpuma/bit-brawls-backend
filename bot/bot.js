@@ -25,11 +25,11 @@ client.on('message', async (channel, tags, message, self) => {
 
   const msg = message.trim().toLowerCase();
   const username = tags['display-name'];
-  const login = tags.username; // lowercase login name
+  const login = tags.username;
   userLoginMap[username] = login;
 
   if (msg === '!help') {
-    return client.say(channel, `📖 Commands: !bitbrawl — Join the queue. !bitbrawl @user — Challenge a user. !bitbrawl @user <bits> — Challenge + wager. !bitbrawl <bits> — Join queue with a wager. !mybet — View wager. !settimeout <sec> — Set max KO timeout (broadcaster only).`);
+    return client.say(channel, `📖 Commands: !bitbrawl — Join the queue. !bitbrawl @user — Challenge a user. !bitbrawl @user <bits> — Challenge + wager. !bitbrawl <bits> — Join queue with a wager. !bits <amount> — Set or update your wager. !mybet — View wager. !settimeout <sec> — Set max KO timeout (broadcaster only).`);
   }
 
   if (msg.startsWith('!settimeout') && tags.badges?.broadcaster) {
@@ -249,8 +249,6 @@ async function runFight(fighterA, fighterB) {
     `📡 ${loser} caught signals from every direction — all bad.`
   ];
 
-
-
   const rawRoast = roasts[Math.floor(Math.random() * roasts.length)];
   const roast = rawRoast.replace(/{winner}/g, winner).replace(/{loser}/g, loser);
 
@@ -262,8 +260,7 @@ async function runFight(fighterA, fighterB) {
     const loserLogin = userLoginMap[loser];
     await sleep(800);
     if (loserLogin) {
-      await client.timeout(channel, loserLogin, timeoutDuration, `KO'd in Bit Brawls`)
-        .catch(err => console.warn("⚠️ Timeout failed:", err.message));
+      await client.timeout(channel, loserLogin, timeoutDuration, `KO'd in Bit Brawls`).catch(err => console.warn("⚠️ Timeout failed:", err.message));
     }
   }
 
