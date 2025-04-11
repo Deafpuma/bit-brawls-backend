@@ -255,8 +255,6 @@ async function runFight(fighterA, fighterB) {
   const rawRoast = roasts[Math.floor(Math.random() * roasts.length)];
   const roast = rawRoast.replace(/{winner}/g, winner).replace(/{loser}/g, loser);
 
-  const finalMessage = `🏆 ${winner} WINS! 💀 ${loser} KO'd! ${roast}`;
-  await client.say(channel, finalMessage);
 
   // Timeout if both wagered
   if (wagerA > 0 && wagerB > 0) {
@@ -271,6 +269,10 @@ async function runFight(fighterA, fighterB) {
       }
     }
   }
+  const timeoutDuration = Math.min(Math.max(Math.max(wagerA, wagerB), 5), MAX_TIMEOUT_SECONDS);
+
+  const finalMessage = `🏆 ${winner} WINS! 💀 ${loser} KO'd! ${roast}..../timeout ${loser} timeoutDuration lost fight!`;
+  await client.say(channel, finalMessage);
 
   delete userBitWagers[fighterA.username];
   delete userBitWagers[fighterB.username];
