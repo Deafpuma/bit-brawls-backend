@@ -265,6 +265,7 @@ async function runFight(fighterA, fighterB) {
         console.warn("⚠️ Timeout failed:", err.message);
       }
     }
+  }
 
   delete userBitWagers[fighterA.username];
   delete userBitWagers[fighterB.username];
