@@ -4,7 +4,7 @@ const tmi = require('tmi.js');
 const client = new tmi.Client({
   identity: {
     username: 'brawl_bit_bot',
-    password: 'oauth:kx3hj0f5g82jjn4vy5paa11hwwrj96' // Replace with secure token
+    password: 'oauth:kx3hj0f5g82jjn4vy5paa11hwwrj96' 
   },
   channels: ['Deafpuma']
 });
@@ -22,8 +22,8 @@ let fightInProgress = false;
 let MAX_TIMEOUT_SECONDS = 60;
 
 const CLIENT_ID = 'gp762nuuoqcoxypju8c569th9wz7q5';
-const ACCESS_TOKEN = 'kx3hj0f5g82jjn4vy5paa11hwwrj96'; // Raw token only
-const MODERATOR_ID = '1292553340'; // REPLACE with your bot's user ID
+const ACCESS_TOKEN = 'kx3hj0f5g82jjn4vy5paa11hwwrj96'; 
+const MODERATOR_ID = '1292553340'; 
 
 client.on('message', async (channel, tags, message, self) => {
   if (self) return;
