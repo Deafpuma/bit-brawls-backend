@@ -2,10 +2,14 @@ const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fet
 const tmi = require('tmi.js');
 const admin = require('firebase-admin');
 
+const credentials = JSON.parse(
+  Buffer.from(process.env.GOOGLE_CREDENTIALS_BASE64, 'base64').toString('utf8')
+);
+
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
+  credential: admin.credential.cert(credentials)
 });
-const db = admin.firestore();
+
 
 const client = new tmi.Client({
   identity: {
