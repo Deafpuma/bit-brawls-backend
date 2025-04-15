@@ -1,7 +1,6 @@
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const tmi = require('tmi.js');
 const admin = require('firebase-admin');
-const serviceAccount = require('./serviceAccountKey.json'); 
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
