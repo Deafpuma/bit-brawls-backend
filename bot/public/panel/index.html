@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bit Brawls - Live Fights</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #121212;
+      color: #f1f1f1;
+      margin: 0;
+      padding: 1rem;
+    }
+    h1 {
+      text-align: center;
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .fight {
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .fight p {
+      margin: 0.25rem 0;
+    }
+    .winner {
+      color: #00ff88;
+    }
+    .loser {
+      color: #ff4444;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔥 Bit Brawls - Live Fights</h1>
+  <div id="fightList">
+    <p>Loading last fight...</p>
+  </div>
+
+  <script>
+    async function loadFights() {
+      try {
+        const res = await fetch('/latest-fight');
+        const fight = await res.json();
+        const fightList = document.getElementById('fightList');
+        fightList.innerHTML = '';
+
+        const div = document.createElement('div');
+        div.className = 'fight';
+        div.innerHTML = `
+          <p><strong class="winner">${fight.winner}</strong> vs <strong class="loser">${fight.loser}</strong></p>
+          <p>${fight.intro}</p>
+          <p>${fight.roast || 'No roast recorded.'}</p>
+        `;
+        fightList.appendChild(div);
+      } catch (err) {
+        document.getElementById('fightList').innerHTML = `<p>Error loading fight.</p>`;
+        console.error(err);
+      }
+    }
+
+    loadFights();
+    setInterval(loadFights, 5000); // refresh every 5 seconds
+  </script>
+</body>
+</html>

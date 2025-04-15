@@ -1,10 +1,17 @@
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const tmi = require('tmi.js');
+const admin = require('firebase-admin');
+const serviceAccount = require('./serviceAccountKey.json'); 
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+const db = admin.firestore();
 
 const client = new tmi.Client({
   identity: {
     username: 'brawl_bit_bot',
-    password: 'oauth:kx3hj0f5g82jjn4vy5paa11hwwrj96' 
+    password: 'oauth:meaug11krikbkzblkvchh1zrxdc3k0'
   },
   channels: ['Deafpuma']
 });
@@ -16,145 +23,58 @@ client.connect().then(() => {
 let challengeQueue = [];
 let pendingChallenges = {};
 let userBitWagers = {};
-let userLoginMap = {}; // { displayName: { login, userId } }
-let userBroadcasterIdMap = {}; // { channelLogin: broadcasterId }
+let userLoginMap = {};
+let userBroadcasterIdMap = {};
 let fightInProgress = false;
 let MAX_TIMEOUT_SECONDS = 60;
+let messageQueue = [];
+let sendingMessages = false;
 
 const CLIENT_ID = 'gp762nuuoqcoxypju8c569th9wz7q5';
-const ACCESS_TOKEN = 'kx3hj0f5g82jjn4vy5paa11hwwrj96'; 
-const MODERATOR_ID = '1292553340'; 
+const ACCESS_TOKEN = 'meaug11krikbkzblkvchh1zrxdc3k0';
+const MODERATOR_ID = '1292553340';
 
-client.on('message', async (channel, tags, message, self) => {
-  if (self) return;
-  const msg = message.trim();
-  const username = tags['display-name'];
-  const login = tags.username;
-  const userId = tags['user-id'];
-  const channelLogin = channel.replace('#', '');
+function enqueueMessage(channel, msg) {
+  messageQueue.push({ channel, msg });
+  if (!sendingMessages) processMessageQueue();
+}
 
-  userLoginMap[username] = { login, userId };
-  userBroadcasterIdMap[channelLogin] = tags['room-id'];
-  const lowerMsg = msg.toLowerCase();
-
-  if (lowerMsg === '!bbhelp') {
-    return client.say(channel, `📖 Commands: !bitbrawl — Join queue. !bitbrawl @user — Challenge. !bitbrawl <bits> — Join with wager. !bitbrawl @user <bits> — Challenge + wager. !bbaccept <user> — Accept challenge. !bits <amount> — Set wager. !mybet — Check wager. !settimeout <sec> — Set max timeout (broadcaster only).`);
-  }
-
-  if (lowerMsg.startsWith('!settimeout') && tags.badges?.broadcaster) {
-    const parts = msg.split(' ');
-    const amount = parseInt(parts[1]);
-    if (!isNaN(amount) && amount >= 5 && amount <= 600) {
-      MAX_TIMEOUT_SECONDS = amount;
-      return client.say(channel, `⏱️ Timeout set to ${amount} seconds.`);
-    } else {
-      return client.say(channel, `❌ Must be between 5–600 seconds.`);
-    }
-  }
-
-  if (lowerMsg.startsWith('!mybet')) {
-    const bet = userBitWagers[username] || 0;
-    return client.say(channel, `💰 ${username}, your wager is ${bet} Bits.`);
-  }
-
-  if (lowerMsg.startsWith('!bbaccept')) {
-    const parts = msg.split(' ');
-    const target = parts[1]?.toLowerCase();
-    if (pendingChallenges[username.toLowerCase()]?.username.toLowerCase() === target) {
-      const challenger = pendingChallenges[username.toLowerCase()];
-      delete pendingChallenges[username.toLowerCase()];
-      challengeQueue = challengeQueue.filter(c => c.username !== challenger.username);
-      const opponent = { username, target: null, paid: true };
-      client.say(channel, `⚔️ ${username} accepted the challenge from ${challenger.username}!`);
-      runFight(challenger, opponent, channelLogin);
-      return;
-    } else {
-      return client.say(channel, `⚠️ No challenge found from ${target}.`);
-    }
-  }
-
-  if (lowerMsg.startsWith('!bitbrawl')) {
-    const args = msg.split(' ');
-    let target = null;
-    let bitWager = 0;
-
-    for (const arg of args.slice(1)) {
-      if (!isNaN(parseInt(arg))) bitWager = parseInt(arg);
-      else if (arg.startsWith('@')) target = arg.slice(1).toLowerCase();
-      else if (arg !== 'accept') target = arg.toLowerCase();
-    }
-
-    if (bitWager < 5) bitWager = 5;
-    userBitWagers[username] = bitWager;
-
-    if (challengeQueue.find(u => u.username.toLowerCase() === username.toLowerCase())) {
-      return client.say(channel, `⚠️ ${username}, you're already in the fight queue.`);
-    }
-
-    const challenger = { username, target, paid: true };
-
-    if (target && target !== username.toLowerCase()) {
-      pendingChallenges[target] = challenger;
-      return client.say(channel, `🧨 ${username} challenges ${target}! Waiting for ${target} to type !bbaccept ${username}`);
-    }
-
-    challengeQueue.push(challenger);
-    client.say(channel, `📝 ${username} enters the fight queue (vs anyone brave enough) with ${bitWager} Bits.`);
-    tryStartFight(channelLogin);
-  }
-});
-
-function tryStartFight(channelLogin) {
-  if (fightInProgress || challengeQueue.length < 2) return;
-  const a = challengeQueue.shift();
-  const bIndex = challengeQueue.findIndex(f => !f.target || f.target === a.username.toLowerCase());
-  if (bIndex === -1) {
-    challengeQueue.unshift(a);
+async function processMessageQueue() {
+  if (messageQueue.length === 0) {
+    sendingMessages = false;
     return;
   }
-  const b = challengeQueue.splice(bIndex, 1)[0];
-  runFight(a, b, channelLogin);
+  sendingMessages = true;
+  const { channel, msg } = messageQueue.shift();
+  await client.say(channel, msg);
+  setTimeout(processMessageQueue, 1000);
 }
 
-async function timeoutViaAPI(channelLogin, userId, duration) {
-  const broadcasterId = userBroadcasterIdMap[channelLogin];
-  if (!broadcasterId) return { ok: false, error: 'Missing broadcaster ID' };
-
-  try {
-    const res = await fetch('https://api.twitch.tv/helix/moderation/bans', {
-      method: 'POST',
-      headers: {
-        'Client-ID': CLIENT_ID,
-        'Authorization': `Bearer ${ACCESS_TOKEN}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        broadcaster_id: broadcasterId,
-        moderator_id: MODERATOR_ID,
-        data: {
-          user_id: userId,
-          duration: duration,
-          reason: "KO'd in Bit Brawls"
-        }
-      })
-    });
-
-    if (!res.ok) {
-      const data = await res.json();
-      console.warn("⚠️ Timeout failed:", data);
-    } else {
-      console.log(`✅ Timed out userId ${userId} for ${duration} sec`);
-    }
-  } catch (err) {
-    console.warn("⚠️ Timeout threw exception:", err.message);
-  }
-}
-
-async function runFight(fighterA, fighterB, channelLogin) {
-  fightInProgress = true;
-  const channel = 'Deafpuma';
-  const sleep = ms => new Promise(res => setTimeout(res, ms));
-
+const queueMessages = [
+  "📝 {user} enters the ring with {bits} Bits. Who's next?",
+  "👊 {user} is locked and loaded with {bits} Bits!",
+  "🔥 {user} throws {bits} Bits on the line. Let the brawls begin!",
+  "💥 {user} enters the queue with {bits} Bits and mean intentions.",
+  "🪙 {user} just gambled {bits} Bits on mayhem!",
+  "⚔️ {user} sharpens their fists and enters with {bits} Bits.",
+  "🎲 {user} rolls into the queue wagering {bits} Bits.",
+  "🚀 {user} launched a {bits} Bit challenge into the queue!",
+  "😈 {user} taunts the next brawler with {bits} Bits!",
+  "🎯 {user} joins with {bits} Bits and deadly aim.",
+  "🧨 {user} lights the fuse with {bits} Bits!",
+  "🎮 {user} enters the game. {bits} Bits at stake!",
+  "🤺 {user} joins the duel arena with {bits} Bits.",
+  "📢 {user} shouts their entrance. {bits} Bits up for grabs!",
+  "🎉 {user} joins the fight queue like a champ. {bits} Bits on deck!",
+  "🕹️ {user} toggled rage mode with {bits} Bits!",
+  "📣 {user} enters like a storm! {bits} Bits wagered!",
+  "💰 {user} drops {bits} Bits like a boss!",
+  "🎤 {user} said \"Let’s go!\" with {bits} Bits.",
+  "🥷 {user} sneaks into the ring with {bits} Bits ready to throw down!",
+  "🧤 {user} laced up and threw {bits} Bits into the pit!",
+  "🎖️ {user} joins the elite with {bits} Bits on the line!"
+];
+function getIntro(fighterA, fighterB) {
   const intros = [
     `${fighterA.username} challenges ${fighterB.username} with one shoe missing but he's ready to go!`,
     `${fighterA.username} steps in yelling \"HOLD MY JUICE!\" at ${fighterB.username}!`,
@@ -209,46 +129,12 @@ async function runFight(fighterA, fighterB, channelLogin) {
     `${fighterA.username} is here, and ${fighterB.username} is about to be there.`,
     `${fighterA.username} just unplugged the router to gain an advantage over ${fighterB.username}.`
   ];
+  return intros[Math.floor(Math.random() * intros.length)];
+}
 
 
-  const intro = intros[Math.floor(Math.random() * intros.length)];
-  await client.say(channel, `🥊 ${intro}`);
-  await sleep(1000);
 
-  const wagerA = userBitWagers[fighterA.username] || 0;
-  const wagerB = userBitWagers[fighterB.username] || 0;
-
-  
-  
-  await client.say(channel, `🎲 ${fighterA.username} wagered ${wagerA} Bits vs ${fighterB.username} wagered ${wagerB} Bits! It's on!`);
-  await sleep(1000);
-
-  const winner = Math.random() > 0.5 ? fighterA.username : fighterB.username;
-  const loser = winner === fighterA.username ? fighterB.username : fighterA.username;
-
-  // Timeout if both wagered
-  if (wagerA > 0 && wagerB > 0) {
-    const timeoutDuration = Math.min(Math.max(Math.max(wagerA, wagerB), 5), MAX_TIMEOUT_SECONDS);
-    const loserUserData = userLoginMap[loser];
-    await sleep(800);
-  
-    if (loserUserData?.userId) {
-      try {
-        const response = await timeoutViaAPI(channelLogin, loserUserData.userId, timeoutDuration);
-        if (response.ok) {
-          console.log(`✅ Timed out ${loserUserData.login} for ${timeoutDuration} sec`);
-        } else {
-          const data = await response.json();
-          console.warn("⚠️ Timeout API failed:", data);
-        }
-      } catch (err) {
-        console.warn("⚠️ Timeout threw exception:", err.message);
-      }
-    }
-  }
-  
-  
-
+function getRoast(winner, loser) {
   const roasts = [
     `💥 ${loser} got folded like a lawn chair by ${winner}!`,
     `🔥 ${loser} is the human equivalent of a participation trophy. Good try I guess.`,
@@ -306,16 +192,235 @@ async function runFight(fighterA, fighterB, channelLogin) {
     `🦆 ${loser} waddled in, flew out. ${winner} wins.`,
     `📡 ${loser} caught signals from every direction — all bad.`
   ];
+  return roasts[Math.floor(Math.random() * roasts.length)];
+}
 
-  const rawRoast = roasts[Math.floor(Math.random() * roasts.length)];
-  const roast = rawRoast.replace(/{winner}/g, winner).replace(/{loser}/g, loser);
+const blindMessages = [
+  `👀 {user} entered a blind brawl. No one knows the wager...`,
+  `🕶️ {user} threw down a mystery bet. Who dares to step up?`,
+  `🎲 {user} is gambling in the shadows. A brawler without fear.`,
+  `🤐 {user} silently entered the arena. The stakes? Unknown.`,
+  `⚔️ {user} has entered a secret match. Bit amount classified.`,
+  `🎭 {user} pulled up wearing a poker face. Hidden wager.`,
+  `💣 {user} dropped into the queue under cloak and dagger.`,
+  `📉 {user} entered a blind brawl. The risk? Undefined.`,
+  `🌫️ {user} fades into the ring with silent confidence.`,
+  `🎩 {user} tossed a coin and whispered, "Let's see what happens..."`,
+  `🧤 {user} slipped into the queue like a ghost with gloves.`,
+  `🎰 {user} spun the wheel without showing their hand.`,
+  `🧠 {user} says “It’s not about the Bits… it’s about the *message*.”`,
+  `📜 {user} signed up for a duel… in invisible ink.`,
+  `💼 {user} brought mystery, power, and… maybe 5 Bits. Maybe 500.`,
+  `🧪 {user} entered a blind test of skill, honor, and mystery.`,
+  `🤖 {user} initiated blind battle protocol. Awaiting challenger...`,
+  `🎯 {user} loaded up… and covered the wager with duct tape.`,
+  `👻 {user} haunts the queue with an unknown stake.`,
+  `🪞 {user} stares at their reflection, ready to brawl in silence.`
+];
 
 
-  
+client.on('message', async (channel, tags, message, self) => {
+  if (self) return;
 
-  const finalMessage = `🏆 ${winner} WINS! 💀 ${loser} KO'd! ${roast}`;
-  await client.say(channel, finalMessage);
+  const msg = message.trim();
+  const username = tags['display-name'];
+  const login = tags.username;
+  const userId = tags['user-id'];
+  const channelLogin = channel.replace('#', '');
 
+  userLoginMap[username] = { login, userId };
+  userBroadcasterIdMap[channelLogin] = tags['room-id'];
+
+  const lowerMsg = msg.toLowerCase();
+
+  if (lowerMsg === '!bblb' || lowerMsg === '!bbleaderboard') {
+    const snapshot = await db.collection(`leaderboards/${channelLogin}/users`).orderBy('wins', 'desc').limit(5).get();
+    const top = snapshot.docs.map((doc, i) => {
+      const d = doc.data();
+      return `${i + 1}. ${doc.id} (${d.wins || 0} wins, ${d.bits || 0} Bits)`;
+    });
+    return enqueueMessage(channel, `🏆 Leaderboard:\n${top.join(' | ')}`);
+  }
+
+  if (lowerMsg === '!mybet') {
+    const bet = userBitWagers[username] || 0;
+    return enqueueMessage(channel, `💰 ${username}, your wager is ${bet} Bits.`);
+  }
+
+  if (lowerMsg === '!bbcancel') {
+    challengeQueue = challengeQueue.filter(u => u.username !== username);
+    for (const [target, challenger] of Object.entries(pendingChallenges)) {
+      if (target === username.toLowerCase() || challenger.username === username) {
+        delete pendingChallenges[target];
+      }
+    }
+    delete userBitWagers[username];
+    return enqueueMessage(channel, `🚪 ${username} left the brawl queue.`);
+  }
+
+  if (lowerMsg.startsWith('!bbaccept')) {
+    const parts = msg.split(' ');
+    const target = parts[1]?.toLowerCase();
+    const wager = parseInt(parts[2]);
+
+    if (!target || isNaN(wager)) {
+      return enqueueMessage(channel, `⚠️ Usage: !bbaccept <username> <bits>. Example: !bbaccept Deafpuma 50`);
+    }
+
+    userBitWagers[username] = Math.max(wager, 5);
+    const challenger = pendingChallenges[username.toLowerCase()];
+
+    if (challenger?.username.toLowerCase() === target) {
+      if (userBitWagers[username] !== userBitWagers[challenger.username]) {
+        return enqueueMessage(channel, `⚠️ Wager must match the challenge. ${challenger.username} bet ${userBitWagers[challenger.username]} Bits.`);
+      }
+
+      delete pendingChallenges[username.toLowerCase()];
+      challengeQueue = challengeQueue.filter(c => c.username !== challenger.username);
+
+      const opponent = { username, target: null, paid: true };
+      enqueueMessage(channel, `⚔️ ${username} accepted the challenge from ${challenger.username} for ${wager} Bits!`);
+      return runFight(challenger, opponent, channelLogin);
+    }
+
+    return enqueueMessage(channel, `⚠️ No challenge found from ${target}.`);
+  }
+
+  if (lowerMsg.startsWith('!bitbrawl')) {
+    const args = msg.split(' ');
+    let target = null;
+    let bitWager = 0;
+    let isBlind = false;
+
+    for (const arg of args.slice(1)) {
+      if (!isNaN(parseInt(arg))) bitWager = parseInt(arg);
+      else if (arg.toLowerCase() === 'blind') isBlind = true;
+      else if (arg.startsWith('@')) target = arg.slice(1).toLowerCase();
+      else if (arg !== 'accept') target = arg.toLowerCase();
+    }
+
+    if (bitWager < 5) bitWager = 5;
+    userBitWagers[username] = bitWager;
+
+    if (challengeQueue.some(u => u.username.toLowerCase() === username.toLowerCase())) {
+      return enqueueMessage(channel, `⚠️ ${username}, you're already in the fight queue.`);
+    }
+
+    const challenger = { username, target: isBlind ? null : target, paid: true };
+
+    if (!isBlind && target && target !== username.toLowerCase()) {
+      pendingChallenges[target] = challenger;
+      setTimeout(() => {
+        if (pendingChallenges[target] === challenger) {
+          delete pendingChallenges[target];
+          enqueueMessage(channel, `⌛ ${target} did not respond in time. Challenge cancelled.`);
+        }
+      }, 60000);
+      return enqueueMessage(channel, `🧨 ${username} challenges ${target}! Waiting for ${target} to type !bbaccept ${username} <bits>`);
+    }
+
+    challengeQueue.push(challenger);
+    const template = isBlind
+  ? blindMessages[Math.floor(Math.random() * blindMessages.length)].replace('{user}', username)
+  : queueMessages[Math.floor(Math.random() * queueMessages.length)]
+      .replace('{user}', username)
+      .replace('{bits}', bitWager.toString());
+
+    enqueueMessage(channel, template);
+    tryStartFight(channelLogin);
+  }
+});
+
+function tryStartFight(channelLogin) {
+  if (fightInProgress || challengeQueue.length < 2) return;
+
+  const a = challengeQueue.shift();
+
+  const bIndex = challengeQueue.findIndex(f =>
+    (!f.target && !a.target) || 
+    f.target === a.username.toLowerCase() || 
+    a.target === f.username.toLowerCase()    
+  );
+
+  if (bIndex === -1) {
+    challengeQueue.unshift(a); 
+    return;
+  }
+
+  const b = challengeQueue.splice(bIndex, 1)[0];
+  runFight(a, b, channelLogin);
+}
+
+
+async function timeoutViaAPI(channelLogin, userId, duration) {
+  const broadcasterId = userBroadcasterIdMap[channelLogin];
+  if (!broadcasterId) return false;
+
+  try {
+    const res = await fetch('https://api.twitch.tv/helix/moderation/bans', {
+      method: 'POST',
+      headers: {
+        'Client-ID': CLIENT_ID,
+        'Authorization': `Bearer ${ACCESS_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        broadcaster_id: broadcasterId,
+        moderator_id: MODERATOR_ID,
+        data: {
+          user_id: userId,
+          duration,
+          reason: "KO'd in Bit Brawls"
+        }
+      })
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn("⚠️ Timeout error:", err.message);
+    return false;
+  }
+}
+
+async function updateStats(winner, bits) {
+  const doc = db.collection(`leaderboards/Deafpuma/users`).doc(winner);
+  await doc.set({
+    wins: admin.firestore.FieldValue.increment(1),
+    bits: admin.firestore.FieldValue.increment(bits)
+  }, { merge: true });
+}
+
+async function runFight(fighterA, fighterB, channelLogin) {
+  fightInProgress = true;
+  const channel = `#${channelLogin}`;
+  const sleep = ms => new Promise(res => setTimeout(res, ms));
+
+  const intro = getIntro(fighterA, fighterB); 
+  await client.say(channel, `🥊 ${intro}`);
+  await sleep(2000);
+
+  const wagerA = userBitWagers[fighterA.username] || 0;
+  const wagerB = userBitWagers[fighterB.username] || 0;
+
+  await client.say(channel, `🎲 ${fighterA.username} wagered ${wagerA} Bits vs ${fighterB.username} wagered ${wagerB} Bits! It's on!`);
+  await sleep(2000);
+
+  const winner = Math.random() > 0.5 ? fighterA.username : fighterB.username;
+  const loser = winner === fighterA.username ? fighterB.username : fighterA.username;
+
+  const roast = getRoast(winner, loser);
+  await client.say(channel, `🏆 ${winner} WINS! 💀 ${loser} KO'd! ${roast}`);
+  await sleep(5000);
+
+  if (wagerA > 0 && wagerB > 0) {
+    const timeoutDuration = Math.max(30, Math.min(Math.max(wagerA, wagerB), 60));
+    const loserData = userLoginMap[loser];
+    if (loserData?.userId) {
+      const success = await timeoutViaAPI(channelLogin, loserData.userId, timeoutDuration);
+      if (!success) enqueueMessage(channel, `⚠️ Could not timeout ${loser}.`);
+    }
+  }
+
+  await updateStats(winner, Math.max(wagerA, wagerB));
 
   delete userBitWagers[fighterA.username];
   delete userBitWagers[fighterB.username];
