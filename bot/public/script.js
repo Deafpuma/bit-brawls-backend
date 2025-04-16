@@ -98,3 +98,4 @@ window.addEventListener("load", () => {
   console.log("✅ Overlay script loaded");
   setInterval(pollLatestFight, 5000);
 });
+
