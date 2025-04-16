@@ -14,7 +14,7 @@ admin.initializeApp({
 const client = new tmi.Client({
   identity: {
     username: 'brawl_bit_bot',
-    password: 'oauth:j8h9u5wdvs6ehx48o21wue187mynlr'
+    password: 'oauth:8oiyu6mb9saoau4pkfg615xriq7dwt'
 
   },
   channels: ['Deafpuma']
@@ -35,7 +35,7 @@ let messageQueue = [];
 let sendingMessages = false;
 
 const CLIENT_ID = 'gp762nuuoqcoxypju8c569th9wz7q5';
-const ACCESS_TOKEN = 'j8h9u5wdvs6ehx48o21wue187mynlr';
+const ACCESS_TOKEN = '8oiyu6mb9saoau4pkfg615xriq7dwt';
 const MODERATOR_ID = '1292553340';
 
 function enqueueMessage(channel, msg) {
