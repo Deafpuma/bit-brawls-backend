@@ -14,7 +14,7 @@ admin.initializeApp({
 const client = new tmi.Client({
   identity: {
     username: 'brawl_bit_bot',
-    password: 'oauth:8oiyu6mb9saoau4pkfg615xriq7dwt'
+        password: 'oauth:8oiyu6mb9saoau4pkfg615xriq7dwt'
 
   },
   channels: ['Deafpuma']
@@ -224,6 +224,31 @@ const blindMessages = [
 
 
 client.on('message', async (channel, tags, message, self) => {
+    if (lowerMsg === '!bottest') {
+      try {
+        const testRef = admin.firestore().collection('debug').doc('connection_test');
+        await testRef.set({
+          bot: 'brawl_bit_bot',
+          timestamp: new Date().toISOString(),
+          user: username
+        });
+        return enqueueMessage(channel, `✅ Firebase write success! Bot is connected as ${username}.`);
+      } catch (err) {
+        console.error("🔥 Firebase write failed:", err);
+        return enqueueMessage(channel, `❌ Firebase write failed. Check logs.`);
+      }
+    }
+
+    if (lowerMsg === '!readtest') {
+      try {
+        const snap = await admin.firestore().collection('debug').doc('connection_test').get();
+        const data = snap.data();
+        return enqueueMessage(channel, `🧠 Read from Firebase: ${data.user} at ${data.timestamp}`);
+      } catch (err) {
+        return enqueueMessage(channel, `❌ Read failed.`);
+      }
+    }
+
   if (self) return;
 
   const msg = message.trim();
