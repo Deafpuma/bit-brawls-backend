@@ -1,20 +1,18 @@
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const tmi = require('tmi.js');
-const admin = require('firebase-admin');
+
 
 const credentials = JSON.parse(
   Buffer.from(process.env.GOOGLE_CREDENTIALS_BASE64, 'base64').toString('utf8')
 );
 
-admin.initializeApp({
-  credential: admin.credential.cert(credentials)
-});
+
 
 
 const client = new tmi.Client({
   identity: {
     username: 'brawl_bit_bot',
-        password: 'oauth:8oiyu6mb9saoau4pkfg615xriq7dwt'
+    password: 'oauth:zdlom30csq3hf2ht5zee578jlmwri7'
 
   },
   channels: ['Deafpuma']
@@ -35,7 +33,7 @@ let messageQueue = [];
 let sendingMessages = false;
 
 const CLIENT_ID = 'gp762nuuoqcoxypju8c569th9wz7q5';
-const ACCESS_TOKEN = '8oiyu6mb9saoau4pkfg615xriq7dwt';
+const ACCESS_TOKEN = 'zdlom30csq3hf2ht5zee578jlmwri7';
 const MODERATOR_ID = '1292553340';
 
 function enqueueMessage(channel, msg) {
@@ -224,31 +222,6 @@ const blindMessages = [
 
 
 client.on('message', async (channel, tags, message, self) => {
-    if (lowerMsg === '!bottest') {
-      try {
-        const testRef = admin.firestore().collection('debug').doc('connection_test');
-        await testRef.set({
-          bot: 'brawl_bit_bot',
-          timestamp: new Date().toISOString(),
-          user: username
-        });
-        return enqueueMessage(channel, `✅ Firebase write success! Bot is connected as ${username}.`);
-      } catch (err) {
-        console.error("🔥 Firebase write failed:", err);
-        return enqueueMessage(channel, `❌ Firebase write failed. Check logs.`);
-      }
-    }
-
-    if (lowerMsg === '!readtest') {
-      try {
-        const snap = await admin.firestore().collection('debug').doc('connection_test').get();
-        const data = snap.data();
-        return enqueueMessage(channel, `🧠 Read from Firebase: ${data.user} at ${data.timestamp}`);
-      } catch (err) {
-        return enqueueMessage(channel, `❌ Read failed.`);
-      }
-    }
-
   if (self) return;
 
   const msg = message.trim();
@@ -410,13 +383,6 @@ async function timeoutViaAPI(channelLogin, userId, duration) {
   }
 }
 
-async function updateStats(winner, bits) {
-  const doc = db.collection(`leaderboards/Deafpuma/users`).doc(winner);
-  await doc.set({
-    wins: admin.firestore.FieldValue.increment(1),
-    bits: admin.firestore.FieldValue.increment(bits)
-  }, { merge: true });
-}
 
 async function runFight(fighterA, fighterB, channelLogin) {
   fightInProgress = true;
