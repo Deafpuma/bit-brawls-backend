@@ -8,6 +8,8 @@ const PORT = 3005;
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
+app.use('/panel', express.static(path.join(__dirname, 'public', 'panel')));
+
 
 let latestFight = null;
 let overlayMuted = false;
