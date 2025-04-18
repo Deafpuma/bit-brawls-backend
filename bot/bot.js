@@ -3,15 +3,15 @@ const tmi = require('tmi.js');
 const fs = require('fs');
 require('dotenv').config();
 
+// === ENV VARIABLES ===
 const CHAT_OAUTH = process.env.CHAT_OAUTH;
 const API_BEARER = process.env.API_BEARER;
 const CLIENT_ID = process.env.CLIENT_ID;
 const MODERATOR_ID = process.env.MODERATOR_ID;
 
-// Load all authorized Twitch channels
 const CHANNELS = fs.existsSync('authorized_channels.txt')
   ? fs.readFileSync('authorized_channels.txt', 'utf-8').split('\n').filter(Boolean)
-  : ['Deafpuma']; // Fallback for manual test
+  : ['Deafpuma']; // fallback
 
 const client = new tmi.Client({
   identity: {
@@ -25,7 +25,7 @@ client.connect().then(() => {
   console.log(`✅ Bot connected to Twitch chat in: ${CHANNELS.join(', ')}`);
 }).catch(console.error);
 
-// === Bot State ===
+// === STATE ===
 let challengeQueue = [];
 let pendingChallenges = {};
 let userBitWagers = {};
@@ -36,7 +36,7 @@ let messageQueue = [];
 let sendingMessages = false;
 const MAX_TIMEOUT_SECONDS = 60;
 
-// === Message Queue ===
+// === MESSAGING ===
 function enqueueMessage(channel, msg) {
   messageQueue.push({ channel, msg });
   if (!sendingMessages) processMessageQueue();
@@ -50,7 +50,7 @@ async function processMessageQueue() {
   setTimeout(processMessageQueue, 1000);
 }
 
-// === Helper Functions ===
+// === UTILITY ===
 function getIntro(a, b) {
   const lines = [
     `${a.username} bursts in riding a shopping cart straight at ${b.username}!`,
@@ -93,7 +93,7 @@ function getRandomKOReason() {
   return reasons[Math.floor(Math.random() * reasons.length)];
 }
 
-// === Timeout ===
+// === TIMEOUT ===
 async function timeoutViaAPI(channelLogin, userId, duration) {
   const broadcasterId = userBroadcasterIdMap[channelLogin];
   if (!broadcasterId || !userId) return false;
@@ -132,7 +132,7 @@ async function timeoutViaAPI(channelLogin, userId, duration) {
   }
 }
 
-// === Fight ===
+// === FIGHT ===
 function tryStartFight(channelLogin) {
   if (fightInProgress || challengeQueue.length < 2) return;
   const a = challengeQueue.shift();
@@ -180,10 +180,9 @@ async function runFight(fighterA, fighterB, channelLogin) {
   fightInProgress = false;
 }
 
-// === Commands ===
+// === CHAT COMMANDS ===
 client.on('message', async (channel, tags, message, self) => {
   if (self) return;
-  console.log(`[📩 Chat] ${tags['display-name']}: ${message}`);
 
   const msg = message.trim();
   const username = tags['display-name'];
@@ -284,6 +283,10 @@ client.on('message', async (channel, tags, message, self) => {
 
     enqueueMessage(channel, msgTemplate);
     tryStartFight(channelLogin);
+  }
+
+  if (lowerMsg === '!ping') {
+    return client.say(channel, `🏓 Pong! Hello ${username}`);
   }
 });
 
