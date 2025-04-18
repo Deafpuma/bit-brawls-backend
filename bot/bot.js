@@ -21,9 +21,12 @@ const client = new tmi.Client({
   channels: CHANNELS
 });
 
-client.connect().then(() => {
+async function startBot() {
+  await client.connect();
   console.log(`✅ Bot connected to Twitch chat in: ${CHANNELS.join(', ')}`);
-}).catch(console.error);
+}
+
+module.exports = { client, startBot };
 
 // === STATE ===
 let challengeQueue = [];
