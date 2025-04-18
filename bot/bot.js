@@ -293,4 +293,10 @@ client.on('message', async (channel, tags, message, self) => {
   }
 });
 
-module.exports = { client };
+async function startBot() {
+  await client.connect();
+  console.log(`✅ Bot connected to Twitch chat in: ${CHANNELS.join(', ')}`);
+}
+
+module.exports = { client, startBot };
+
