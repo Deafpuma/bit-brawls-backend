@@ -288,4 +288,4 @@ client.on('message', async (channel, tags, message, self) => {
   }
 });
 
-module.exports = { startbot};
+
