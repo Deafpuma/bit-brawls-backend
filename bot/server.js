@@ -1,18 +1,14 @@
-// server.js (auth and join only)
 const express = require('express');
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const fs = require('fs');
 require('dotenv').config();
-const { startBot } = require('./bot');
-startBot();
-
+const { startBot } = require('./bot/bot');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 const CLIENT_ID = process.env.TWITCH_CLIENT_ID;
 const CLIENT_SECRET = process.env.TWITCH_CLIENT_SECRET;
-const CHAT_OAUTH = process.env.CHAT_OAUTH;
 
 function loadAuthorizedChannels() {
   return fs.existsSync('authorized_channels.txt')
@@ -23,8 +19,7 @@ function loadAuthorizedChannels() {
 app.get('/', (req, res) => {
   res.send(`
     <h1>🧠 Bit Brawls Bot</h1>
-    <p>Click below to authorize the bot in your channel:</p>
-    <a href="https://id.twitch.tv/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=https://bit-brawls-backend.onrender.com/callback&response_type=code&scope=moderation:read+moderator:manage:banned_users+chat:read+chat:edit" style="font-size:20px;background:#6441a5;color:#fff;padding:10px 16px;border-radius:5px;text-decoration:none;">Authorize Bot</a>
+    <a href="https://id.twitch.tv/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=https://bit-brawls-backend.onrender.com/callback&response_type=code&scope=moderation:read+moderator:manage:banned_users+chat:read+chat:edit">Authorize Bot</a>
   `);
 });
 
@@ -63,9 +58,10 @@ app.get('/callback', async (req, res) => {
     console.log(`✅ Authorized and added: ${user.login}`);
   }
 
-  res.send(`✅ Bot is now authorized to join <strong>${user.display_name}</strong>'s channel! You can close this tab.`);
+  res.send(`✅ Bot added to <strong>${user.display_name}</strong>'s channel.`);
 });
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🌐 OAuth server running at http://0.0.0.0:${PORT}`);
+  startBot();
 });
