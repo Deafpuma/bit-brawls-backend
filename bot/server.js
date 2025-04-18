@@ -1,57 +1,73 @@
 const express = require('express');
-const cors = require('cors');
-const path = require('path');
+const fetch = require('node-fetch');
+const fs = require('fs');
+require('dotenv').config();
 
 const app = express();
-const PORT = 3005;
+const PORT = process.env.PORT || 3000;
 
-app.use(cors());
-app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
-app.use('/panel', express.static(path.join(__dirname, 'public', 'panel')));
+app.get('/', (req, res) => {
+  res.send(`
+    <h1>Bit Brawls Bot</h1>
+    <p>Authorize the bot to join your Twitch channel below:</p>
+    <a href="https://id.twitch.tv/oauth2/authorize?client_id=${process.env.TWITCH_CLIENT_ID}&redirect_uri=https://bit-brawls-backend.onrender.com/callback&response_type=code&scope=moderation:read+moderator:manage:banned_users+chat:read+chat:edit" style="font-size:20px;background:#6441a5;color:#fff;padding:12px 20px;border:none;border-radius:5px;text-decoration:none;">Authorize Bot</a>
+  `);
+});
 
+app.get('/callback', async (req, res) => {
+  const code = req.query.code;
+  if (!code) return res.status(400).send('Missing ?code from Twitch');
 
-let latestFight = null;
-let overlayMuted = false;
+  const response = await fetch('https://id.twitch.tv/oauth2/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: process.env.TWITCH_CLIENT_ID,
+      client_secret: process.env.TWITCH_CLIENT_SECRET,
+      code,
+      grant_type: 'authorization_code',
+      redirect_uri: 'https://bit-brawls-backend.onrender.com/callback'
+    })
+  });
 
-// ✅ Handle overlay polling
-app.get("/latest-fight", (req, res) => {
-  if (latestFight) {
-    res.json({ ...latestFight, muted: overlayMuted });
-    latestFight = null;
-  } else {
-    res.status(204).send();
+  const data = await response.json();
+  if (!data.access_token) return res.status(401).send('❌ Failed to authorize with Twitch');
+
+  const userInfo = await fetch('https://api.twitch.tv/helix/users', {
+    headers: {
+      'Authorization': `Bearer ${data.access_token}`,
+      'Client-ID': process.env.TWITCH_CLIENT_ID
+    }
+  });
+
+  const user = (await userInfo.json()).data[0];
+  if (!user) return res.status(400).send('❌ Unable to fetch Twitch user info');
+
+  const existing = fs.existsSync('authorized_channels.txt')
+    ? fs.readFileSync('authorized_channels.txt', 'utf-8').split('\n').filter(Boolean)
+    : [];
+
+  if (!existing.includes(user.login)) {
+    fs.appendFileSync('authorized_channels.txt', `${user.login}\n`);
   }
+
+  console.log('✅ Authorized:', user.display_name);
+  console.log('🔑 Access Token:', data.access_token);
+
+  res.send(`✅ Bot is now authorized to join <strong>${user.display_name}</strong>'s channel! You can now close this tab.`);
 });
 
-// ✅ Debug test
-app.get("/debug-fight", (req, res) => {
-  latestFight = {
-    intro: "Punchbot challenges KOzilla in the Octagon!",
-    winner: "Punchbot",
-    loser: "KOzilla",
-    muted: false
-  };
-  console.log("✅ Injected debug fight");
-  res.send("✅ Test fight injected");
+app.get('/refresh', async (req, res) => {
+  const channels = loadAuthorizedChannels();
+  const current = client.getChannels().map(c => c.replace('#', ''));
+  const newOnes = channels.filter(c => !current.includes(c));
+  for (const chan of newOnes) {
+    await client.join(chan);
+  }
+  res.send(`✅ Refreshed and joined: ${newOnes.join(', ')}`);
 });
 
-// ✅ Toggle overlay sound
-app.post("/toggle-sound", (req, res) => {
-  overlayMuted = !!req.body.mute;
-  console.log(`🔇 Overlay muted: ${overlayMuted}`);
-  res.sendStatus(200);
-});
 
-// ✅ Bot will POST here when fight finishes
-app.post("/set-fight", (req, res) => {
-  const { intro, winner, loser } = req.body;
-  latestFight = { intro, winner, loser };
-  console.log("✅ Received new fight result from bot");
-  res.sendStatus(200);
-});
-
-// ✅ Start server
 app.listen(PORT, () => {
-  console.log(`🔥 Overlay server running at http://localhost:${PORT}`);
+  console.log(`🌐 OAuth Server running at http://localhost:${PORT}`);
 });
