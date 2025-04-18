@@ -1,37 +1,29 @@
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const tmi = require('tmi.js');
+const fs = require('fs');
 require('dotenv').config();
 
-// Environment variables (✅ loaded from .env)
+const CHAT_OAUTH = process.env.CHAT_OAUTH;
 const API_BEARER = process.env.API_BEARER;
 const CLIENT_ID = process.env.CLIENT_ID;
 const MODERATOR_ID = process.env.MODERATOR_ID;
 
-const tmi = require('tmi.js');
-require('dotenv').config();
-
-const CHAT_OAUTH = process.env.CHAT_OAUTH;
-
-// ✅ Load channels from file or fallback
-const fs = require('fs');
-
+// Load all authorized Twitch channels
 const CHANNELS = fs.existsSync('authorized_channels.txt')
   ? fs.readFileSync('authorized_channels.txt', 'utf-8').split('\n').filter(Boolean)
-  : ['Deafpuma']; // fallback for testing
+  : ['Deafpuma']; // Fallback for manual test
 
 const client = new tmi.Client({
   identity: {
     username: 'brawl_bit_bot',
-    password: process.env.CHAT_OAUTH
+    password: CHAT_OAUTH
   },
   channels: CHANNELS
 });
 
-
 client.connect().then(() => {
-  console.log(`✅ Bot connected to Twitch chat in channels: ${CHANNELS.join(', ')}`);
+  console.log(`✅ Bot connected to Twitch chat in: ${CHANNELS.join(', ')}`);
 }).catch(console.error);
-
 
 // === Bot State ===
 let challengeQueue = [];
@@ -44,196 +36,67 @@ let messageQueue = [];
 let sendingMessages = false;
 const MAX_TIMEOUT_SECONDS = 60;
 
-// === Messaging ===
+// === Message Queue ===
 function enqueueMessage(channel, msg) {
   messageQueue.push({ channel, msg });
   if (!sendingMessages) processMessageQueue();
 }
 
 async function processMessageQueue() {
-  if (messageQueue.length === 0) return sendingMessages = false;
+  if (messageQueue.length === 0) return (sendingMessages = false);
   sendingMessages = true;
   const { channel, msg } = messageQueue.shift();
   await client.say(channel, msg);
   setTimeout(processMessageQueue, 1000);
 }
 
-// === Fight Messages ===
-const queueMessages = [
-  "📝 {user} enters the ring with {bits} Bits. Who's next?",
-  "👊 {user} is locked and loaded with {bits} Bits!",
-  "🔥 {user} throws {bits} Bits on the line. Let the brawls begin!",
-  "💥 {user} enters the queue with {bits} Bits and mean intentions.",
-  "🪙 {user} just gambled {bits} Bits on mayhem!",
-  "⚔️ {user} sharpens their fists and enters with {bits} Bits.",
-  "🎲 {user} rolls into the queue wagering {bits} Bits.",
-  "🚀 {user} launched a {bits} Bit challenge into the queue!",
-  "😈 {user} taunts the next brawler with {bits} Bits!",
-  "🎯 {user} joins with {bits} Bits and deadly aim.",
-  "🧨 {user} lights the fuse with {bits} Bits!",
-  "🎮 {user} enters the game. {bits} Bits at stake!",
-  "🤺 {user} joins the duel arena with {bits} Bits.",
-  "📢 {user} shouts their entrance. {bits} Bits up for grabs!",
-  "🎉 {user} joins the fight queue like a champ. {bits} Bits on deck!",
-  "🕹️ {user} toggled rage mode with {bits} Bits!",
-  "📣 {user} enters like a storm! {bits} Bits wagered!",
-  "💰 {user} drops {bits} Bits like a boss!",
-  "🎤 {user} said \"Let’s go!\" with {bits} Bits.",
-  "🥷 {user} sneaks into the ring with {bits} Bits ready to throw down!",
-  "🧤 {user} laced up and threw {bits} Bits into the pit!",
-  "🎖️ {user} joins the elite with {bits} Bits on the line!"
-];
-function getIntro(fighterA, fighterB) {
-  const intros = [
-    `${fighterA.username} challenges ${fighterB.username} with one shoe missing but he's ready to go!`,
-    `${fighterA.username} steps in yelling \"HOLD MY JUICE!\" at ${fighterB.username}!`,
-    `${fighterA.username} walks in with glitter boots to face ${fighterB.username}!`,
-    `${fighterA.username} bursts in riding a shopping cart straight at ${fighterB.username}!`,
-    `${fighterA.username} showed up wearing Crocs and confidence. ${fighterB.username} is doomed.`,
-    `${fighterA.username} smacks ${fighterB.username} with a fish and screams “IT'S GO TIME!”`,
-    `${fighterA.username} rolled in yelling “I HAVE THE HIGH GROUND!” at ${fighterB.username}.`,
-    `${fighterA.username} challenges ${fighterB.username} using only interpretive dance.`,
-    `${fighterA.username} jumps out of a bush yelling “BRAWL ME, NERD!” at ${fighterB.username}.`,
-    `${fighterA.username} slides in on a banana peel directly into ${fighterB.username}'s face.`,
-    `${fighterA.username} came to fight. ${fighterB.username} just came for snacks.`,
-    `${fighterA.username} brought a kazoo... and chaos. ${fighterB.username} is nervous.`,
-    `${fighterA.username} starts screaming like a goat at ${fighterB.username}. This is war.`,
-    `${fighterA.username} just slapped ${fighterB.username} with a wet sock. It’s on.`,
-    `${fighterA.username} jumped in like “You rang?” while ${fighterB.username} choked on air.`,
-    `${fighterA.username} is powered by caffeine and petty today. ${fighterB.username}, beware.`,
-    `${fighterA.username} enters spinning a rubber chicken above their head toward ${fighterB.username}!`,
-    `${fighterA.username} asked “You got games on your phone?” and punched ${fighterB.username} mid-sentence.`,
-    `${fighterA.username} spawned from the void screaming “BRAWL!” and points at ${fighterB.username}.`,
-    `${fighterA.username} cartwheels in yelling “I JUST ATE 3 HOTDOGS LET’S GO!”`,
-    `${fighterA.username} smashes through the ceiling screaming “WHY AM I HERE?!” at ${fighterB.username}.`,
-    `${fighterA.username} yeets themselves into the ring like it’s a Smash Bros tournament.`,
-    `${fighterA.username} summoned a squirrel army they all attacked ${fighterB.username}`,
-    `${fighterA.username} moonwalks into the ring and throws glitter in ${fighterB.username}’s eyes.`,
-    `${fighterA.username} ran in with a pool noodle and war paint. ${fighterB.username} isn’t ready.`,
-    `${fighterA.username} screamed “BABA BOOEY!” and charged ${fighterB.username}.`,
-    `${fighterA.username} rips off their shirt to reveal another shirt. ${fighterB.username} is terrified.`,
-    `${fighterA.username} points at ${fighterB.username} and says “This is personal… for no reason.”`,
-    `${fighterA.username} walked in sipping juice like “I got time today.”`,
-    `${fighterA.username} does a split, screams "FOR THE VINE!", and punches ${fighterB.username}.`,
-    `${fighterA.username} enters in a bathrobe with a bat and bad intentions.`,
-    `${fighterA.username} backflips in with sunglasses yelling “IT’S TIME TO DUEL!”`,
-    `${fighterA.username} shows up riding a llama, staring down ${fighterB.username}!`,
-    `${fighterA.username} challenges ${fighterB.username} with a juice box and no fear.`,
-    `${fighterA.username} moonwalks into the ring to face ${fighterB.username}!`,
-    `${fighterA.username} enters flapping like a bird at ${fighterB.username}.`,
-    `${fighterA.username} throws down the glitter gauntlet at ${fighterB.username}.`,
-    `${fighterA.username} teleports in shouting "I AM THE STORM!" at ${fighterB.username}.`,
-    `${fighterA.username} came in wearing crocs and confidence to fight ${fighterB.username}.`,
-    `${fighterA.username} launches into the ring via trampoline aimed at ${fighterB.username}.`,
-    `${fighterA.username} slaps ${fighterB.username} with a rubber chicken. It's on.`,
-    `${fighterA.username} appears from a cloud of smoke ready to slap ${fighterB.username}.`,
-    `${fighterA.username} woke up today and chose violence. ${fighterB.username}, prepare.`,
-    `${fighterA.username} dropped from the sky Fortnite-style onto ${fighterB.username}.`,
-    `${fighterA.username} came in hot with energy drinks and vengeance for ${fighterB.username}.`,
-    `${fighterA.username} rides a Segway into the arena to battle ${fighterB.username}.`,
-    `${fighterA.username} does 3 cartwheels then stares down ${fighterB.username}.`,
-    `${fighterA.username} crashes through the ceiling screaming "${fighterB.username}, FIGHT ME!"`,
-    `${fighterA.username} called ${fighterB.username} out during their lunch break.`,
-    `${fighterA.username} enters with one sock and all the rage.`,
-    `${fighterA.username} is here, and ${fighterB.username} is about to be there.`,
-    `${fighterA.username} just unplugged the router to gain an advantage over ${fighterB.username}.`
+// === Helper Functions ===
+function getIntro(a, b) {
+  const lines = [
+    `${a.username} bursts in riding a shopping cart straight at ${b.username}!`,
+    `${a.username} jumped in yelling “YOU RANG?” while ${b.username} was distracted.`,
+    `${a.username} slapped ${b.username} with a rubber chicken. It’s on!`,
+    `${a.username} called ${b.username} out during lunch break.`,
+    `${a.username} moonwalked in while ${b.username} blinked.`
   ];
-  return intros[Math.floor(Math.random() * intros.length)];
+  return lines[Math.floor(Math.random() * lines.length)];
 }
 
 function getRoast(winner, loser) {
   const roasts = [
     `💥 ${loser} got folded like a lawn chair by ${winner}!`,
-    `🔥 ${loser} is the human equivalent of a participation trophy. Good try I guess.`,
     `⚰️ RIP ${loser} — ${winner} said "sit down."`,
-    `💣 ${winner} KO’d ${loser} with a flying elbow!`,
-    `🥶 ${loser} got the ice cream sweats and melted. ${winner} wins by default.`,
-    `💥 ${loser} was last seen orbiting Saturn. Good hit, ${winner}.`,
-    `☠️ ${loser} just evaporated. ${winner} didn’t even blink.`,
-    `🧼 ${winner} washed ${loser} and hung them up to dry.`,
-    `🚑 ${loser} was escorted out via imaginary ambulance.`,
-    `🍕 ${loser} folded like a slice of pizza — sloppy and fast.`,
-    `🎮 ${loser} rage quit and unplugged their router.`,
     `🐸 ${loser} caught hands AND feelings.`,
-    `🍞 ${loser} just got toasted. ${winner} is butterin' up.`,
-    `🔥 ${winner} sent ${loser} back to the tutorial.`,
-    `🛑 ${loser} pressed Alt+F4 irl.`,
-    `🧀 ${loser} got melted like fondue. ${winner} dipped out.`,
-    `🎯 ${winner} landed a hit so clean it got a Michelin star.`,
-    `🎢 ${loser} took the L and a ride on the shame coaster.`,
-    `📦 ${loser} just got express shipped to defeat.`,
-    `🥶 ${loser} froze mid-punch like Windows 98.`,
-    `🌪️ ${loser} got swept up and forgotten.`,
-    `📉 ${loser}’s skill level just got delisted.`,
-    `🪦 ${loser} now belongs to the shadow realm.`,
-    `🚫 ${loser} was denied access to the winner's circle.`,
-    `🎩 ${winner} pulled victory out of a clown hat.`,
-    `🧻 ${loser} got wiped like a whiteboard.`,
-    `👟 ${loser} got stomped out in light-up Skechers.`,
-    `💤 ${winner} put ${loser} to sleep with one tap.`,
-    `🌊 ${loser} got splashed out of the arena.`,
-    `📢 ${winner} yelled "BOOM" and ${loser} exploded from fear.`,
-    `🪵 ${loser} just got clapped like a campfire log.`,
-    `🕶️ ${loser} didn’t see it coming. Should’ve worn shades.`,
-    `🎈 ${loser} popped like a balloon. Sad noise.`,
-    `🎅 ${loser} made Santa’s naughty list just from this L.`,
-    `📱 ${loser} got blocked, reported, and muted.`,
-    `💼 ${winner} gave ${loser} the business. And the invoice.`,
-    `🐌 ${loser} moved too slow. Got slow-cooked.`,
-    `💊 ${loser} just took the L-pill. ${winner} prescribed it.`,
-    `🍩 ${loser} left the arena with zero wins and one donut.`,
-    `🎨 ${winner} painted the floor with ${loser}’s pride.`,
-    `🔕 ${loser} got silenced like a bad ringtone.`,
-    `🎤 ${winner} dropped the mic... on ${loser}’s shoulder and was like yeah that hurt uh?!.`,
-    `🧂 ${loser} is salty. Confirmed.`,
-    `🏚️ ${loser} got evicted mid-fight. ${winner} owns the ring.`,
-    `🍦 ${loser} melted like soft serve. Yikes.`,
-    `🐍 ${loser} slithered in, got smacked, slithered out.`,
-    `🎻 ${winner} played a tiny violin after the KO.`,
-    `📚 ${loser} just became an example in the rulebook.`,
-    `🐐 ${winner} is the GOAT. ${loser} just the “guh.”`,
-    `🐙 ${loser} got slapped 8 times. Weird, but effective.`,
-    `🧟 ${loser} came back to life... only to catch it again.`,
-    `🎩 ${winner} turned ${loser} into a disappearing act.`,
-    `🌮 ${loser} got crunched like a bad taco.`,
-    `🦆 ${loser} waddled in, flew out. ${winner} wins.`,
-    `📡 ${loser} caught signals from every direction — all bad.`
+    `🧼 ${winner} washed ${loser} and hung them up to dry.`,
+    `🪵 ${loser} just got clapped like a campfire log.`
   ];
   return roasts[Math.floor(Math.random() * roasts.length)];
 }
 
-const blindMessages = [
-  `👀 {user} entered a blind brawl. No one knows the wager...`,
-  `🕶️ {user} threw down a mystery bet. Who dares to step up?`,
-  `🎲 {user} is gambling in the shadows. A brawler without fear.`,
-  `🤐 {user} silently entered the arena. The stakes? Unknown.`,
-  `⚔️ {user} has entered a secret match. Bit amount classified.`,
-  `🎭 {user} pulled up wearing a poker face. Hidden wager.`,
-  `💣 {user} dropped into the queue under cloak and dagger.`,
-  `📉 {user} entered a blind brawl. The risk? Undefined.`,
-  `🌫️ {user} fades into the ring with silent confidence.`,
-  `🎩 {user} tossed a coin and whispered, "Let's see what happens..."`,
-  `🧤 {user} slipped into the queue like a ghost with gloves.`,
-  `🎰 {user} spun the wheel without showing their hand.`,
-  `🧠 {user} says “It’s not about the Bits… it’s about the *message*.”`,
-  `📜 {user} signed up for a duel… in invisible ink.`,
-  `💼 {user} brought mystery, power, and… maybe 5 Bits. Maybe 500.`,
-  `🧪 {user} entered a blind test of skill, honor, and mystery.`,
-  `🤖 {user} initiated blind battle protocol. Awaiting challenger...`,
-  `🎯 {user} loaded up… and covered the wager with duct tape.`,
-  `👻 {user} haunts the queue with an unknown stake.`,
-  `🪞 {user} stares at their reflection, ready to brawl in silence.`
-];
+function getBlindMessage(user) {
+  const messages = [
+    `👻 ${user} haunts the queue with an unknown stake.`,
+    `🎩 ${user} tossed a coin and whispered, "Let's see what happens..."`,
+    `🧤 ${user} slipped into the queue like a ghost with gloves.`
+  ];
+  return messages[Math.floor(Math.random() * messages.length)];
+}
 
+function getRandomKOReason() {
+  const reasons = [
+    "KO’d in Bit Brawls 🥊",
+    "Slapped into the shadow realm 🌪️",
+    "Folded like a cheap lawn chair 💺",
+    "Silenced by a cartoon punch 🔇",
+    "Bit-slammed into next week 💢"
+  ];
+  return reasons[Math.floor(Math.random() * reasons.length)];
+}
 
-// === Timeout API ===
+// === Timeout ===
 async function timeoutViaAPI(channelLogin, userId, duration) {
   const broadcasterId = userBroadcasterIdMap[channelLogin];
-  if (!broadcasterId || !userId) {
-    console.warn("❌ Missing broadcasterId or userId");
-    return false;
-  }
-
+  if (!broadcasterId || !userId) return false;
   const reason = getRandomKOReason();
 
   try {
@@ -255,13 +118,13 @@ async function timeoutViaAPI(channelLogin, userId, duration) {
       })
     });
 
-    const responseBody = await res.text();
+    const text = await res.text();
     if (!res.ok) {
-      console.warn("⚠️ Twitch timeout failed:", res.status, responseBody);
+      console.warn("⚠️ Timeout failed:", res.status, text);
       return false;
     }
 
-    console.log(`✅ Timeout succeeded for ${userId} (${duration}s): ${reason}`);
+    console.log(`✅ Timed out ${userId} for ${duration}s: ${reason}`);
     return true;
   } catch (err) {
     console.warn("❌ Timeout API error:", err.message);
@@ -269,7 +132,7 @@ async function timeoutViaAPI(channelLogin, userId, duration) {
   }
 }
 
-// === Fight Logic ===
+// === Fight ===
 function tryStartFight(channelLogin) {
   if (fightInProgress || challengeQueue.length < 2) return;
   const a = challengeQueue.shift();
@@ -303,22 +166,21 @@ async function runFight(fighterA, fighterB, channelLogin) {
 
   const roast = getRoast(winner, loser);
   await client.say(channel, `🏆 ${winner} WINS! 💀 ${loser} KO'd! ${roast}`);
-  await sleep(3000);
+  await sleep(2000);
 
   const loserData = userLoginMap[loser];
   if (loserData?.userId && wagerA > 0 && wagerB > 0) {
-    const timeoutDuration = Math.max(30, Math.min(Math.max(wagerA, wagerB), MAX_TIMEOUT_SECONDS));
-    const success = await timeoutViaAPI(channelLogin, loserData.userId, timeoutDuration);
-    if (!success) client.say(channel, `⚠️ Could not timeout ${loser}.`);
+    const duration = Math.max(30, Math.min(Math.max(wagerA, wagerB), MAX_TIMEOUT_SECONDS));
+    const success = await timeoutViaAPI(channelLogin, loserData.userId, duration);
+    if (!success) enqueueMessage(channel, `⚠️ Could not timeout ${loser}.`);
   }
 
   delete userBitWagers[fighterA.username];
   delete userBitWagers[fighterB.username];
-
   fightInProgress = false;
 }
 
-// === Twitch Chat Command Handler ===
+// === Commands ===
 client.on('message', async (channel, tags, message, self) => {
   if (self) return;
 
@@ -332,7 +194,7 @@ client.on('message', async (channel, tags, message, self) => {
   userLoginMap[username] = {
     login,
     userId,
-    isMod: tags.mod || tags['user-type'] === 'mod' || tags.badges?.moderator === '1',
+    isMod: tags.mod || tags.badges?.moderator === '1',
     isBroadcaster: tags.badges?.broadcaster === '1'
   };
   userBroadcasterIdMap[channelLogin] = tags['room-id'];
@@ -371,7 +233,6 @@ client.on('message', async (channel, tags, message, self) => {
 
       delete pendingChallenges[username.toLowerCase()];
       challengeQueue = challengeQueue.filter(c => c.username !== challenger.username);
-
       const opponent = { username, target: null, paid: true };
       enqueueMessage(channel, `⚔️ ${username} accepted ${challenger.username}'s challenge for ${wager} Bits!`);
       return runFight(challenger, opponent, channelLogin);
@@ -397,7 +258,7 @@ client.on('message', async (channel, tags, message, self) => {
     userBitWagers[username] = bitWager;
 
     if (challengeQueue.some(u => u.username.toLowerCase() === username.toLowerCase())) {
-      return enqueueMessage(channel, `⚠️ You're already in the queue, ${username}.`);
+      return enqueueMessage(channel, `⚠️ ${username}, you're already in the fight queue.`);
     }
 
     const challenger = { username, target: isBlind ? null : target, paid: true };
@@ -414,11 +275,15 @@ client.on('message', async (channel, tags, message, self) => {
     }
 
     challengeQueue.push(challenger);
-    const template = isBlind
-      ? blindMessages[Math.floor(Math.random() * blindMessages.length)].replace('{user}', username)
-      : queueMessages[Math.floor(Math.random() * queueMessages.length)].replace('{user}', username).replace('{bits}', bitWager.toString());
+    const msgTemplate = isBlind
+      ? getBlindMessage(username)
+      : queueMessages[Math.floor(Math.random() * queueMessages.length)]
+          .replace('{user}', username)
+          .replace('{bits}', bitWager.toString());
 
-    enqueueMessage(channel, template);
+    enqueueMessage(channel, msgTemplate);
     tryStartFight(channelLogin);
   }
 });
+
+module.exports = { client };
