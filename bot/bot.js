@@ -35,6 +35,15 @@ let messageQueue = [];
 let sendingMessages = false;
 const MAX_TIMEOUT_SECONDS = 60;
 
+const queueMessages = [
+  "🌀 {user} entered the Bit Brawl with {bits} Bits of confidence!",
+  "💪 {user} just stepped into the ring wagering {bits} Bits!",
+  "🎯 {user} lined up their target with {bits} Bits on the line!",
+  "🔥 {user} is ready to throw hands for {bits} Bits!",
+  "🕶️ {user} walks in like a boss, risking {bits} Bits!"
+];
+
+
 // === Message Queue ===
 function enqueueMessage(channel, msg) {
   messageQueue.push({ channel, msg });
