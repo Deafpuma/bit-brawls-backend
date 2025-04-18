@@ -5,6 +5,30 @@ let soundIsPlaying = false;
 let overlayMuted = false;
 let userBitWagers = {};
 
+
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+const tmi = require('tmi.js');
+const fs = require('fs');
+require('dotenv').config();
+
+const CHAT_OAUTH = process.env.CHAT_OAUTH;
+const API_BEARER = process.env.API_BEARER;
+const CLIENT_ID = process.env.CLIENT_ID;
+const MODERATOR_ID = process.env.MODERATOR_ID;
+
+const CHANNELS = fs.existsSync('authorized_channels.txt')
+  ? fs.readFileSync('authorized_channels.txt', 'utf-8').split('\n').filter(Boolean)
+  : ['Deafpuma'];
+
+const client = new tmi.Client({
+  identity: {
+    username: 'brawl_bit_bot',
+    password: CHAT_OAUTH
+  },
+  channels: CHANNELS
+});
+
+
 const koMessages = [
   "💥 KO! {loser} got launched into the Shadow Realm!",
   "🥊 {loser} got hit so hard they respawned in Minecraft!",
