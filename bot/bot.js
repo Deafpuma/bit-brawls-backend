@@ -8,10 +8,9 @@ const API_BEARER = process.env.API_BEARER;
 const CLIENT_ID = process.env.CLIENT_ID;
 const MODERATOR_ID = process.env.MODERATOR_ID;
 
-// Load all authorized Twitch channels
 const CHANNELS = fs.existsSync('authorized_channels.txt')
   ? fs.readFileSync('authorized_channels.txt', 'utf-8').split('\n').filter(Boolean)
-  : ['Deafpuma']; // Fallback for manual test
+  : ['Deafpuma'];
 
 const client = new tmi.Client({
   identity: {
@@ -183,6 +182,9 @@ async function runFight(fighterA, fighterB, channelLogin) {
 // === Commands ===
 client.on('message', async (channel, tags, message, self) => {
   if (self) return;
+  if (message.toLowerCase() === '!ping') {
+    client.say(channel, `@${tags.username}, Pong! 🏓`);
+  }
 
   const msg = message.trim();
   const username = tags['display-name'];
