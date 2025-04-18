@@ -2,7 +2,7 @@ const express = require('express');
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const fs = require('fs');
 require('dotenv').config();
-const { startBot } = require('./bot/bot');
+const { startBot } = require('./bot');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
