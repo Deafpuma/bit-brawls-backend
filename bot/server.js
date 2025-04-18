@@ -101,7 +101,6 @@ app.get('/refresh', async (req, res) => {
 });
 
 // 🚀 Start server and bot
-app.listen(PORT, () => {
-  console.log(`🌐 OAuth server running at http://localhost:${PORT}`);
-  connectBot();
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🌐 OAuth server running at http://0.0.0.0:${PORT}`);
 });
