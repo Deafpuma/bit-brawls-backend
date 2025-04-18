@@ -7,24 +7,25 @@ const API_BEARER = process.env.API_BEARER;
 const CLIENT_ID = process.env.CLIENT_ID;
 const MODERATOR_ID = process.env.MODERATOR_ID;
 
-const fs = require('fs');
 const tmi = require('tmi.js');
 require('dotenv').config();
 
 const CHAT_OAUTH = process.env.CHAT_OAUTH;
 
 // ✅ Load channels from file or fallback
+const fs = require('fs');
+
 const CHANNELS = fs.existsSync('authorized_channels.txt')
   ? fs.readFileSync('authorized_channels.txt', 'utf-8')
       .split('\n')
       .map(c => c.trim())
       .filter(Boolean)
-  : ['Deafpuma'];
+  : ['Deafpuma']; // fallback
 
 const client = new tmi.Client({
   identity: {
     username: 'brawl_bit_bot',
-    password: CHAT_OAUTH
+    password: process.env.CHAT_OAUTH
   },
   channels: CHANNELS
 });
