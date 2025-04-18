@@ -16,11 +16,8 @@ const CHAT_OAUTH = process.env.CHAT_OAUTH;
 const fs = require('fs');
 
 const CHANNELS = fs.existsSync('authorized_channels.txt')
-  ? fs.readFileSync('authorized_channels.txt', 'utf-8')
-      .split('\n')
-      .map(c => c.trim())
-      .filter(Boolean)
-  : ['Deafpuma']; // fallback
+  ? fs.readFileSync('authorized_channels.txt', 'utf-8').split('\n').filter(Boolean)
+  : ['Deafpuma']; // fallback for testing
 
 const client = new tmi.Client({
   identity: {
@@ -29,6 +26,7 @@ const client = new tmi.Client({
   },
   channels: CHANNELS
 });
+
 
 client.connect().then(() => {
   console.log(`✅ Bot connected to Twitch chat in channels: ${CHANNELS.join(', ')}`);

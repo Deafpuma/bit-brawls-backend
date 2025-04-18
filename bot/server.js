@@ -1,5 +1,7 @@
 const express = require('express');
-const fetch = require('node-fetch');
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+
+require('./bot');
 const fs = require('fs');
 require('dotenv').config();
 
@@ -8,11 +10,12 @@ const PORT = process.env.PORT || 3000;
 
 app.get('/', (req, res) => {
   res.send(`
-    <h1>Bit Brawls Bot</h1>
-    <p>Authorize the bot to join your Twitch channel below:</p>
-    <a href="https://id.twitch.tv/oauth2/authorize?client_id=${process.env.TWITCH_CLIENT_ID}&redirect_uri=https://bit-brawls-backend.onrender.com/callback&response_type=code&scope=moderation:read+moderator:manage:banned_users+chat:read+chat:edit" style="font-size:20px;background:#6441a5;color:#fff;padding:12px 20px;border:none;border-radius:5px;text-decoration:none;">Authorize Bot</a>
+    <h1>🧠 Bit Brawls Bot</h1>
+    <p>To add the bot to your channel, click below:</p>
+    <a href="https://id.twitch.tv/oauth2/authorize?client_id=${process.env.CLIENT_ID}&redirect_uri=https://bit-brawls-backend.onrender.com/callback&response_type=code&scope=moderation:read+moderator:manage:banned_users+chat:read+chat:edit" style="font-size:20px;background:#6441a5;color:#fff;padding:12px 20px;border:none;border-radius:5px;text-decoration:none;">Authorize Bot</a>
   `);
 });
+
 
 app.get('/callback', async (req, res) => {
   const code = req.query.code;
