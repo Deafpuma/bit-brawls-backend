@@ -183,6 +183,7 @@ async function runFight(fighterA, fighterB, channelLogin) {
 // === Commands ===
 client.on('message', async (channel, tags, message, self) => {
   if (self) return;
+  console.log(`[📩 Chat] ${tags['display-name']}: ${message}`);
 
   const msg = message.trim();
   const username = tags['display-name'];

@@ -13,12 +13,14 @@ const CLIENT_SECRET = process.env.TWITCH_CLIENT_SECRET;
 
 let client = null;
 
+// === Load channels from file or fallback ===
 function loadAuthorizedChannels() {
   return fs.existsSync('authorized_channels.txt')
     ? fs.readFileSync('authorized_channels.txt', 'utf-8').split('\n').filter(Boolean)
     : ['Deafpuma'];
 }
 
+// === Connect Bot and Listen for Messages ===
 function connectBot() {
   const CHANNELS = loadAuthorizedChannels();
   if (client) client.disconnect();
@@ -34,9 +36,25 @@ function connectBot() {
   client.connect().then(() => {
     console.log(`✅ Bot connected to channels: ${CHANNELS.join(', ')}`);
   }).catch(console.error);
+
+  // ✅ Add command logic here
+  client.on('message', async (channel, tags, message, self) => {
+    if (self) return;
+
+    const username = tags['display-name'];
+    const msg = message.trim().toLowerCase();
+
+    // 🔧 Test command
+    if (msg === '!ping') {
+      return client.say(channel, `🏓 Pong! Hello ${username}`);
+    }
+
+    // 🔧 You can add more commands here, e.g.:
+    // if (msg.startsWith('!bitbrawl')) { ... }
+  });
 }
 
-// 🌐 Home page with "Authorize" button
+// === Auth Page ===
 app.get('/', (req, res) => {
   res.send(`
     <h1>🧠 Bit Brawls Bot</h1>
@@ -45,7 +63,7 @@ app.get('/', (req, res) => {
   `);
 });
 
-// 🔐 Callback route Twitch hits after authorization
+// === OAuth Callback Handler ===
 app.get('/callback', async (req, res) => {
   const code = req.query.code;
   if (!code) return res.status(400).send('Missing ?code');
@@ -83,13 +101,11 @@ app.get('/callback', async (req, res) => {
     console.log(`✅ Authorized and added: ${user.login}`);
   }
 
-  // Auto-refresh connection
-  connectBot();
-
+  connectBot(); // 🔁 auto rejoin newly authorized channel
   res.send(`✅ Bot is now authorized to join <strong>${user.display_name}</strong>'s channel! You can close this tab.`);
 });
 
-// 🔄 Optional manual refresh endpoint
+// === Manual Refresh Endpoint (Optional) ===
 app.get('/refresh', async (req, res) => {
   const channels = loadAuthorizedChannels();
   const joined = client.getChannels().map(c => c.replace('#', ''));
@@ -100,7 +116,8 @@ app.get('/refresh', async (req, res) => {
   res.send(`✅ Refreshed and joined new channels: ${toJoin.join(', ') || 'None'}`);
 });
 
-// 🚀 Start server and bot
+// === Start Web Server and Connect Bot ===
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🌐 OAuth server running at http://0.0.0.0:${PORT}`);
+  connectBot();
 });
