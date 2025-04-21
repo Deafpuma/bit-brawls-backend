@@ -287,14 +287,16 @@ function getRandomKOReason() {
 }
 
 // === Timeout ===
-async function unmodViaAPI(broadcasterId, userId, accessToken) {
+async function unmodViaAPI(broadcasterId, userId, accessToken, clientId) {
+
   try {
     const res = await fetch(`https://api.twitch.tv/helix/moderation/moderators?broadcaster_id=${broadcasterId}&user_id=${userId}`, {
       method: 'DELETE',
       headers: {
-        'Client-ID': CLIENT_ID,
+        'Client-ID': clientId,
         'Authorization': `Bearer ${accessToken}`
       }
+      
     });
 
     const text = await res.text();
@@ -365,7 +367,7 @@ if (loserData?.userId && wagerA > 0 && wagerB > 0) {
     await sleep(500);
     const config = await getBroadcasterToken(channelLogin);
     if (config?.access_token) {
-      const unmodSuccess = await unmodViaAPI(config.user_id, loserData.userId, config.access_token);
+      const unmodSuccess = await unmodViaAPI(config.user_id, loserData.userId, config.access_token, config.client_id);
       if (!unmodSuccess) {
         enqueueMessage(channel, `⚠️ Could not unmod ${loser}.`);
       }
