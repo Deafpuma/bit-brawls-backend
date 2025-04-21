@@ -5,7 +5,6 @@ let serviceAccount;
 try {
   serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG);
   console.log("✅ FIREBASE_CONFIG keys:", Object.keys(serviceAccount));
-
 } catch (err) {
   console.error("❌ Failed to parse FIREBASE_CONFIG:", err.message);
   process.exit(1);
@@ -13,13 +12,21 @@ try {
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
-  
-
 });
+
+const db = admin.firestore(); // ✅ THIS was likely missing or misplaced
+
+async function saveBroadcasterToken(login, config) {
+  await db.collection("broadcasters").doc(login).set(config, { merge: true });
+}
+
+async function getBroadcasterToken(login) {
+  const doc = await db.collection("broadcasters").doc(login).get();
+  return doc.exists ? doc.data() : null;
+}
 
 module.exports = {
   db,
   saveBroadcasterToken,
   getBroadcasterToken
 };
-
