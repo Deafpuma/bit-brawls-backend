@@ -5,6 +5,10 @@ let serviceAccount;
 try {
   serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG);
   console.log("✅ FIREBASE_CONFIG keys:", Object.keys(serviceAccount));
+
+  // ✅ This is the missing magic
+  process.env.GOOGLE_CLOUD_PROJECT = serviceAccount.project_id;
+
 } catch (err) {
   console.error("❌ Failed to parse FIREBASE_CONFIG:", err.message);
   process.exit(1);
@@ -14,7 +18,7 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
 
-const db = admin.firestore(); // ✅ THIS was likely missing or misplaced
+const db = admin.firestore();
 
 async function saveBroadcasterToken(login, config) {
   await db.collection("broadcasters").doc(login).set(config, { merge: true });
