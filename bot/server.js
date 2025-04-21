@@ -5,7 +5,10 @@ const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fet
 const fs = require('fs');
 require('dotenv').config();
 
-const { saveBroadcasterToken } = require("./config/firebase");
+
+
+const firebase = require("./config/firebase");
+
 
 
 const app = express();
@@ -63,7 +66,7 @@ app.get('/callback', async (req, res) => {
   }
 
   // ✅ Save token to Firestore via config/firebase.js
-  await saveBroadcasterToken(user.login, {
+  await firebase.saveBroadcasterToken(user.login, {
     user_id: user.id,
     access_token: tokenData.access_token,
     refresh_token: tokenData.refresh_token,
