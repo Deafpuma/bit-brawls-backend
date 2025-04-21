@@ -298,7 +298,7 @@ async function timeoutViaAPI(broadcasterId, userId, duration, reason, accessToke
       },
       body: JSON.stringify({
         broadcaster_id: broadcasterId,
-        moderator_id: broadcasterId, // broadcaster acting as mod
+        moderator_id: broadcasterId,  // broadcaster as the moderator
         data: {
           user_id: userId,
           duration: duration,
@@ -320,6 +320,7 @@ async function timeoutViaAPI(broadcasterId, userId, duration, reason, accessToke
     return false;
   }
 }
+
 
 async function unmodViaAPI(broadcasterId, userId, accessToken, clientId) {
 
