@@ -383,7 +383,7 @@ async function runFight(fighterA, fighterB, channelLogin) {
       }, duration * 1000);
     }
     
-    if (!success) enqueueMessage(channel, `⚠️ Could not timeout ${loser}.`);
+    //if (!success) enqueueMessage(channel, `⚠️ Could not timeout ${loser}.`);
   }
 
   delete userBitWagers[fighterA.username];
