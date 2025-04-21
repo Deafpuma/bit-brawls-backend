@@ -1,5 +1,5 @@
 const express = require('express');
-process.env.GOOGLE_APPLICATION_CREDENTIALS = "/etc/secrets/firebaseServiceAccount";
+
 
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const fs = require('fs');
