@@ -1,20 +1,17 @@
 const admin = require("firebase-admin");
 
-let decoded = null;
+let serviceAccount;
 
 try {
-  const base64 = process.env.FIREBASE_CONFIG_BASE64;
-  if (!base64) throw new Error("FIREBASE_CONFIG_BASE64 is missing");
-  const json = Buffer.from(base64, "base64").toString("utf8");
-  decoded = JSON.parse(json);
-  console.log("✅ Parsed FIREBASE_CONFIG from BASE64");
+  serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG);
+  console.log("✅ FIREBASE_CONFIG loaded. Keys:", Object.keys(serviceAccount));
 } catch (err) {
-  console.error("❌ Failed to load FIREBASE_CONFIG_BASE64:", err.message);
+  console.error("❌ Failed to parse FIREBASE_CONFIG:", err.message);
   process.exit(1);
 }
 
 admin.initializeApp({
-  credential: admin.credential.cert(decoded)
+  credential: admin.credential.cert(serviceAccount)
 });
 
 const db = admin.firestore();
