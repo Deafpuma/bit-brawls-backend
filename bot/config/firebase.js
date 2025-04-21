@@ -1,18 +1,22 @@
 const admin = require("firebase-admin");
 
 let serviceAccount;
-
-try {
-  serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG);
-  console.log("✅ FIREBASE_CONFIG loaded. Keys:", Object.keys(serviceAccount));
-} catch (err) {
-  console.error("❌ Failed to parse FIREBASE_CONFIG:", err.message);
-  process.exit(1);
+if (process.env.FIREBASE_CONFIG) {
+  try {
+    serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG);
+    console.log("✅ FIREBASE_CONFIG loaded. Keys:", Object.keys(serviceAccount));
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount)
+    });
+  } catch (err) {
+    console.error("❌ Failed to parse FIREBASE_CONFIG:", err.message);
+    process.exit(1);
+  }
+} else {
+  console.warn("⚠️ FIREBASE_CONFIG not found. Trying GOOGLE_APPLICATION_CREDENTIALS path...");
+  admin.initializeApp(); // Uses GOOGLE_APPLICATION_CREDENTIALS env path
 }
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
 
 const db = admin.firestore();
 
