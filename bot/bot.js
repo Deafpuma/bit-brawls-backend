@@ -489,6 +489,7 @@ client.on('message', async (channel, tags, message, self) => {
   const userId = tags['user-id'];
   const channelLogin = channel.replace('#', '').toLowerCase();
   const lowerMsg = msg.toLowerCase();
+  const isBroadcaster = tags.badges?.broadcaster === '1';
 
   userLoginMap[username] = {
     login,
@@ -540,35 +541,57 @@ client.on('message', async (channel, tags, message, self) => {
     return enqueueMessage(channel, `⚠️ No challenge found from ${target}.`);
   }
 
+  if (lowerMsg.startsWith('!setmin') && isBroadcaster) {
+    const parts = msg.split(' ');
+    const newMin = parseInt(parts[1]);
+    if (isNaN(newMin) || newMin < 5) {
+      return enqueueMessage(channel, `⚠️ Usage: !setmin <seconds> (minimum 5)`);
+    }
+    if (!channelTimeoutSettings[channelLogin]) channelTimeoutSettings[channelLogin] = {};
+    channelTimeoutSettings[channelLogin].min = newMin;
+    return enqueueMessage(channel, `✅ Min timeout set to ${newMin}s for this channel.`);
+  }
+
+  if (lowerMsg.startsWith('!setmax') && isBroadcaster) {
+    const parts = msg.split(' ');
+    const newMax = parseInt(parts[1]);
+    if (isNaN(newMax) || newMax < 10) {
+      return enqueueMessage(channel, `⚠️ Usage: !setmax <seconds> (minimum 10)`);
+    }
+    if (!channelTimeoutSettings[channelLogin]) channelTimeoutSettings[channelLogin] = {};
+    channelTimeoutSettings[channelLogin].max = newMax;
+    return enqueueMessage(channel, `✅ Max timeout set to ${newMax}s for this channel.`);
+  }
+
   if (lowerMsg.startsWith('!brawl')) {
     const args = msg.split(' ');
     let target = null;
     let bitWager = 0;
     let isBlind = false;
-  
+
     for (const arg of args.slice(1)) {
       if (!isNaN(parseInt(arg))) bitWager = parseInt(arg);
       else if (arg.toLowerCase() === 'blind') isBlind = true;
       else if (arg.startsWith('@')) target = arg.slice(1).toLowerCase();
       else if (arg !== 'accept') target = arg.toLowerCase();
     }
-  
+
     if (isBlind) {
       pendingBlindBrawlers[login] = channelLogin;
       client.whisper(login, `👋 Hey ${username}, how many Bits do you want to wager? Reply here.`)
         .catch(err => console.warn(`❌ Whisper failed: ${err.message}`));
       return enqueueMessage(channel, `👀 Whisper sent to ${username} for blind Bit Brawl entry.`);
     }
-  
+
     if (bitWager < 5) bitWager = 5;
     userBitWagers[username] = bitWager;
-  
+
     if (challengeQueue.some(u => u.username.toLowerCase() === username.toLowerCase())) {
       return enqueueMessage(channel, `⚠️ ${username}, you're already in the fight queue.`);
     }
-  
+
     const challenger = { username, target: isBlind ? null : target, paid: true };
-  
+
     if (!isBlind && target && target !== username.toLowerCase()) {
       pendingChallenges[target] = challenger;
       setTimeout(() => {
@@ -579,17 +602,15 @@ client.on('message', async (channel, tags, message, self) => {
       }, 60000);
       return enqueueMessage(channel, `🧨 ${username} challenges ${target}! Use !accept ${username} <bits> to respond.`);
     }
-  
+
     challengeQueue.push(challenger);
     const msgTemplate = queueMessages[Math.floor(Math.random() * queueMessages.length)]
       .replace('{user}', username)
       .replace('{bits}', bitWager.toString());
     enqueueMessage(channel, msgTemplate);
     tryStartFight(channelLogin);
-  }  
+  }
 });
-
-
 
 client.on('whisper', (from, userstate, message) => {
   const login = userstate.username;
