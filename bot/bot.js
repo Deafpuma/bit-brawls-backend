@@ -520,6 +520,6 @@ function startBot() {
   }).catch(console.error);
 }
 
-if (process.env.START_BOT !== 'false') {
-  startBot();
-}
+// ✅ Always run the bot when required OR run directly
+startBot();
+
