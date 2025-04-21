@@ -363,11 +363,12 @@ async function runFight(fighterA, fighterB, channelLogin) {
     await sleep(1000);
     if (userLoginMap[loser]?.isMod) {
       wasModBeforeTimeout[loser] = true;
-      enqueueMessage(channel, `🧼 Attempting to unmod ${userLoginMap[loser]?.login}`);
+      enqueueMessage(channel, `/unmod ${userLoginMap[loser]?.login}`);
+      //enqueueMessage(channel, `🧼 Attempting to unmod ${userLoginMap[loser]?.login}`);
 
       console.log(`🧹 Scheduling unmod for ${loser}`);
       await sleep(1000); // slight delay
-      enqueueMessage(channel, `/unmod ${userLoginMap[loser]?.login}`);
+      //enqueueMessage(channel, `/unmod ${userLoginMap[loser]?.login}`);
       //client.say(channel,`/unmod ${userLoginMap[loser]?.login}`)
 
 
