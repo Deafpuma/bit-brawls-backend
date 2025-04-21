@@ -1,9 +1,8 @@
 const admin = require("firebase-admin");
 
 let serviceAccount;
-
 try {
-  serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG);
+  serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG); // uses plain JSON
   console.log("✅ FIREBASE_CONFIG loaded. Keys:", Object.keys(serviceAccount));
 } catch (err) {
   console.error("❌ Failed to parse FIREBASE_CONFIG:", err.message);
@@ -11,9 +10,7 @@ try {
 }
 
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  // ⬇️ Force project ID manually (important for auth to work)
-  projectId: serviceAccount.project_id
+  credential: admin.credential.cert(serviceAccount)
 });
 
 const db = admin.firestore();
