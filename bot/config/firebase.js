@@ -12,6 +12,7 @@ try {
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
+  // ⬇️ Force project ID manually (important for auth to work)
   projectId: serviceAccount.project_id
 });
 
