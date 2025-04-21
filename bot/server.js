@@ -70,8 +70,10 @@ app.get('/callback', async (req, res) => {
     user_id: user.id,
     access_token: tokenData.access_token,
     refresh_token: tokenData.refresh_token,
+    client_id: CLIENT_ID, 
     login: user.login
   });
+  
 
   res.send(`✅ Bot added to <strong>${user.display_name}</strong>'s channel and token saved.`);
 });
