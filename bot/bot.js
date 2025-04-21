@@ -367,8 +367,8 @@ async function runFight(fighterA, fighterB, channelLogin) {
 
       console.log(`🧹 Scheduling unmod for ${loser}`);
       await sleep(1000); // slight delay
-      //enqueueMessage(channel, `/unmod ${userLoginMap[loser]?.login}`);
-      client.say(channel,`/unmod ${userLoginMap[loser]?.login}`)
+      enqueueMessage(channel, `/unmod ${userLoginMap[loser]?.login}`);
+      //client.say(channel,`/unmod ${userLoginMap[loser]?.login}`)
 
 
       await sleep(2000); // allow unmod to process
@@ -378,8 +378,8 @@ async function runFight(fighterA, fighterB, channelLogin) {
     const duration = Math.max(30, Math.min(Math.max(wagerA, wagerB), MAX_TIMEOUT_SECONDS));
     const success = await timeoutViaAPI(channelLogin, loserData.userId, duration);
     const reason = getRandomKOReason();
-    client.say(channel, `/timeout ${loser} ${duration} ${reason}`);
-    //enqueueMessage(channel, `/timeout ${loser} ${duration} ${reason}`);
+    //client.say(channel, `/timeout ${loser} ${duration} ${reason}`);
+    enqueueMessage(channel, `/timeout ${loser} ${duration} ${reason}`);
 
     console.log(`✅ Timed out ${loser} for ${duration}s: ${reason}`);
 
