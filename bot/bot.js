@@ -427,18 +427,7 @@ async function runFight(fighterA, fighterB, channelLogin) {
       await sleep(500);
 
       const config = await getBroadcasterToken(channelLogin);
-      if (config?.access_token) {
-        const unmodSuccess = await unmodViaAPI(config.user_id, loserData.userId, config.access_token, process.env.TWITCH_CLIENT_ID);
-        if (!unmodSuccess) {
-          enqueueMessage(channel, `⚠️ Could not unmod ${loser}.`);
         }
-      } else {
-        enqueueMessage(channel, `⚠️ Missing broadcaster token for ${channelLogin}.`);
-      }
-      await sleep(1500); // Allow Twitch time to process
-    }
-
-    const timeoutSuccess = await timeoutViaAPI(config.user_id, loserData.userId, duration, reason, config.access_token, process.env.TWITCH_CLIENT_ID);
     if (!timeoutSuccess) {
       enqueueMessage(channel, `⚠️ Could not timeout ${loser}.`);
     } else {
