@@ -33,6 +33,7 @@ let userBroadcasterIdMap = {};
 let fightInProgress = false;
 let messageQueue = [];
 let sendingMessages = false;
+const wasModBeforeTimeout = {};
 const MAX_TIMEOUT_SECONDS = 60;
 
 const queueMessages = [
@@ -339,6 +340,7 @@ function tryStartFight(channelLogin) {
 async function runFight(fighterA, fighterB, channelLogin) {
   fightInProgress = true;
   const channel = `#${channelLogin}`;
+  
   const sleep = ms => new Promise(res => setTimeout(res, ms));
 
   const intro = getIntro(fighterA, fighterB);
@@ -360,8 +362,18 @@ async function runFight(fighterA, fighterB, channelLogin) {
 
   const loserData = userLoginMap[loser];
   if (loserData?.userId && wagerA > 0 && wagerB > 0) {
+    if (userLoginMap[loser]?.isMod) {
+      wasModBeforeTimeout[loser] = true;
+      client.say(channel, `/unmod ${loser}`);
+    }
     const duration = Math.max(30, Math.min(Math.max(wagerA, wagerB), MAX_TIMEOUT_SECONDS));
     const success = await timeoutViaAPI(channelLogin, loserData.userId, duration);
+    if (wasModBeforeTimeout[loser]) {
+      setTimeout(() => {
+        client.say(channel, `/mod ${loser}`);
+        delete wasModBeforeTimeout[loser]; // Clean up
+      }, duration * 1000);
+    }
     if (!success) enqueueMessage(channel, `⚠️ Could not timeout ${loser}.`);
   }
 
