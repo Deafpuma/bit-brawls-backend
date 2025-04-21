@@ -6,8 +6,6 @@ require('dotenv').config();
 const { getBroadcasterToken } = require("./config/firebase");
 
 
-
-
 const CHAT_OAUTH = process.env.CHAT_OAUTH;
 const API_BEARER = process.env.API_BEARER;
 const CLIENT_ID = process.env.CLIENT_ID;
@@ -37,6 +35,12 @@ let messageQueue = [];
 let sendingMessages = false;
 const wasModBeforeTimeout = {};
 const MAX_TIMEOUT_SECONDS = 60;
+
+
+let channelTimeoutSettings = {};
+
+let pendingBlindBrawlers = {};
+
 
 const queueMessages = [
   "🌀 {user} entered the Bit Brawl with {bits} Bits of confidence!",
@@ -251,36 +255,36 @@ function getRandomKOReason() {
     "Folded like a cheap lawn chair 💺",
     "Silenced by a cartoon punch 🔇",
     "Bit-slammed into next week 💢",
-    "💥 KO! {loser} got launched into the Shadow Realm!",
-    "🥊 {loser} got hit so hard they respawned in Minecraft!",
-    "💀 {loser} rage quit IRL. Brutal!",
-    "🚑 {loser} just called their mom. It’s over!",
-    "🎮 {loser} dropped their controller and their dignity.",
-    "🔥 {loser} was deleted from existence. GG.",
-    "🌪️ {loser} got swept out of the arena. Oof!",
-    "🕳️ {loser} fell into a wormhole mid-punch.",
-    "🐔 {loser} ran off clucking. Chicken confirmed.",
-    "🚫 {loser} just got banned from life.",
-    "💥 {loser} got beaned into a loading screen!",
-    "📴 {loser} just got disconnected from life.",
-    "🧹 {loser} got swept AND mopped. Clean KO!",
-    "🔮 {loser} didn’t see that one coming. Fate sealed.",
-    "🎲 {loser} rolled a nat 1. It’s super effective.",
-    "🚀 {loser} took off like a bottle rocket. KO confirmed.",
-    "📼 {loser}'s defeat is already a Twitch clip.",
-    "📉 {loser}'s stock just dropped in real time.",
-    "🎭 {loser} just got clowned so hard the circus left town.",
-    "🪦 {loser} found the respawn point the hard way.",
-    "🧨 {loser} exploded into confetti — we checked.",
-    "🍩 {loser} left with zero wins and one donut.",
-    "🛑 {loser} hit the wall and bounced back to the lobby.",
-    "📚 {loser} just became the example in the rulebook.",
-    "🎤 {loser} caught a mic drop. To the face.",
-    "🧽 {loser} got wiped clean like a dry erase board.",
-    "🧻 {loser} crumbled like a cheap napkin.",
-    "🫥 {loser} disappeared mid-fight. Poof.",
-    "🍕 {loser} folded like a pizza slice on a hot day.",
-    "🏳️ {loser} just surrendered via emoji."
+    "💥 KO! got launched into the Shadow Realm!",
+    "🥊 got hit so hard they respawned in Minecraft!",
+    "💀 rage quit IRL. Brutal!",
+    "🚑  just called their mom. It’s over!",
+    "🎮 dropped their controller and their dignity.",
+    "🔥 was deleted from existence. GG.",
+    "🌪️ got swept out of the arena. Oof!",
+    "🕳️ fell into a wormhole mid-punch.",
+    "🐔 ran off clucking. Chicken confirmed.",
+    "🚫 just got banned from life.",
+    "💥 got beaned into a loading screen!",
+    "📴 just got disconnected from life.",
+    "🧹 got swept AND mopped. Clean KO!",
+    "🔮 didn’t see that one coming. Fate sealed.",
+    "🎲 rolled a nat 1. It’s super effective.",
+    "🚀 took off like a bottle rocket. KO confirmed.",
+    "📼 defeat is already a Twitch clip.",
+    "📉 stock just dropped in real time.",
+    "🎭 just got clowned so hard the circus left town.",
+    "🪦 found the respawn point the hard way.",
+    "🧨 exploded into confetti — we checked.",
+    "🍩 left with zero wins and one donut.",
+    "🛑 hit the wall and bounced back to the lobby.",
+    "📚 just became the example in the rulebook.",
+    "🎤 caught a mic drop. To the face.",
+    "🧽 got wiped clean like a dry erase board.",
+    "🧻 crumbled like a cheap napkin.",
+    "🫥 disappeared mid-fight. Poof.",
+    "🍕 folded like a pizza slice on a hot day.",
+    "🏳️ just surrendered via emoji."
 
   ];
   return reasons[Math.floor(Math.random() * reasons.length)];
@@ -499,7 +503,7 @@ client.on('message', async (channel, tags, message, self) => {
     return enqueueMessage(channel, `💰 ${username}, your wager is ${bet} Bits.`);
   }
 
-  if (lowerMsg === '!bbcancel') {
+  if (lowerMsg === '!cancel') {
     challengeQueue = challengeQueue.filter(u => u.username !== username);
     for (const [target, challenger] of Object.entries(pendingChallenges)) {
       if (target === username.toLowerCase() || challenger.username === username) {
@@ -510,13 +514,13 @@ client.on('message', async (channel, tags, message, self) => {
     return enqueueMessage(channel, `🚪 ${username} left the brawl queue.`);
   }
 
-  if (lowerMsg.startsWith('!bbaccept')) {
+  if (lowerMsg.startsWith('!accept')) {
     const parts = msg.split(' ');
     const target = parts[1]?.toLowerCase();
     const wager = parseInt(parts[2]);
 
     if (!target || isNaN(wager)) {
-      return enqueueMessage(channel, `⚠️ Usage: !bbaccept <username> <bits>`);
+      return enqueueMessage(channel, `⚠️ Usage: !accept <username> <bits>`);
     }
 
     userBitWagers[username] = Math.max(wager, 5);
@@ -536,28 +540,35 @@ client.on('message', async (channel, tags, message, self) => {
     return enqueueMessage(channel, `⚠️ No challenge found from ${target}.`);
   }
 
-  if (lowerMsg.startsWith('!bitbrawl')) {
+  if (lowerMsg.startsWith('!brawl')) {
     const args = msg.split(' ');
     let target = null;
     let bitWager = 0;
     let isBlind = false;
-
+  
     for (const arg of args.slice(1)) {
       if (!isNaN(parseInt(arg))) bitWager = parseInt(arg);
       else if (arg.toLowerCase() === 'blind') isBlind = true;
       else if (arg.startsWith('@')) target = arg.slice(1).toLowerCase();
       else if (arg !== 'accept') target = arg.toLowerCase();
     }
-
+  
+    if (isBlind) {
+      pendingBlindBrawlers[login] = channelLogin;
+      client.whisper(login, `👋 Hey ${username}, how many Bits do you want to wager? Reply here.`)
+        .catch(err => console.warn(`❌ Whisper failed: ${err.message}`));
+      return enqueueMessage(channel, `👀 Whisper sent to ${username} for blind Bit Brawl entry.`);
+    }
+  
     if (bitWager < 5) bitWager = 5;
     userBitWagers[username] = bitWager;
-
+  
     if (challengeQueue.some(u => u.username.toLowerCase() === username.toLowerCase())) {
       return enqueueMessage(channel, `⚠️ ${username}, you're already in the fight queue.`);
     }
-
+  
     const challenger = { username, target: isBlind ? null : target, paid: true };
-
+  
     if (!isBlind && target && target !== username.toLowerCase()) {
       pendingChallenges[target] = challenger;
       setTimeout(() => {
@@ -566,20 +577,41 @@ client.on('message', async (channel, tags, message, self) => {
           enqueueMessage(channel, `⌛ ${target} didn’t respond. Challenge expired.`);
         }
       }, 60000);
-      return enqueueMessage(channel, `🧨 ${username} challenges ${target}! Use !bbaccept ${username} <bits> to respond.`);
+      return enqueueMessage(channel, `🧨 ${username} challenges ${target}! Use !accept ${username} <bits> to respond.`);
     }
-
+  
     challengeQueue.push(challenger);
-    const msgTemplate = isBlind
-      ? getBlindMessage(username)
-      : queueMessages[Math.floor(Math.random() * queueMessages.length)]
-          .replace('{user}', username)
-          .replace('{bits}', bitWager.toString());
-
+    const msgTemplate = queueMessages[Math.floor(Math.random() * queueMessages.length)]
+      .replace('{user}', username)
+      .replace('{bits}', bitWager.toString());
     enqueueMessage(channel, msgTemplate);
     tryStartFight(channelLogin);
-  }
+  }  
 });
+
+
+
+client.on('whisper', (from, userstate, message) => {
+  const login = userstate.username;
+  const bitAmount = parseInt(message.trim());
+  const channelLogin = pendingBlindBrawlers[login];
+
+  if (!channelLogin) return;
+  if (isNaN(bitAmount) || bitAmount < 5) {
+    return client.whisper(login, `⚠️ Please enter a valid number of Bits (minimum 5).`);
+  }
+
+  userBitWagers[login] = bitAmount;
+  const challenger = { username: login, target: null, paid: true };
+  challengeQueue.push(challenger);
+
+  client.whisper(login, `✅ You're in the Bit Brawl queue with ${bitAmount} Bits! Good luck!`);
+  tryStartFight(channelLogin);
+  delete pendingBlindBrawlers[login];
+});
+
+
+
 function startBot() {
   client.connect().then(() => {
     console.log(`✅ Bot connected to Twitch chat in: ${CHANNELS.join(', ')}`);
