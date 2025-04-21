@@ -3,6 +3,11 @@ const tmi = require('tmi.js');
 const fs = require('fs');
 require('dotenv').config();
 
+const { getBroadcasterToken } = require("./config/firebase");
+
+
+
+
 const CHAT_OAUTH = process.env.CHAT_OAUTH;
 const API_BEARER = process.env.API_BEARER;
 const CLIENT_ID = process.env.CLIENT_ID;
