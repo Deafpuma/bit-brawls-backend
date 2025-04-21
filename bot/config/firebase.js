@@ -1,9 +1,17 @@
 const admin = require("firebase-admin");
 const fs = require("fs");
+const path = "/etc/secrets/firebaseServiceAccount";
 
-// ✅ PARSE the raw string from Render secret file
-const rawKey = fs.readFileSync("/etc/secrets/firebaseServiceAccount", "utf8");
-const serviceAccount = JSON.parse(rawKey); // 👈 must parse it here
+// ✅ Read the raw file and parse it as JSON
+let serviceAccount;
+
+try {
+  const rawKey = fs.readFileSync(path, "utf8");
+  serviceAccount = JSON.parse(rawKey);
+} catch (err) {
+  console.error("❌ Failed to parse Firebase service account key:", err.message);
+  process.exit(1);
+}
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
