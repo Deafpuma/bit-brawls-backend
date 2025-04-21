@@ -5,7 +5,8 @@ const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fet
 const fs = require('fs');
 require('dotenv').config();
 
-const { saveBroadcasterToken } = require("./config/firebase"); // ✅ Import this here
+const { saveBroadcasterToken } = require("./config/firebase");
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;

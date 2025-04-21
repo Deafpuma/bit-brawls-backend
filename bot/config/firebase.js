@@ -16,3 +16,10 @@ admin.initializeApp({
   
 
 });
+
+module.exports = {
+  db,
+  saveBroadcasterToken,
+  getBroadcasterToken
+};
+
