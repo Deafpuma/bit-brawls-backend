@@ -65,6 +65,30 @@ const queueMessages = [
 ];
 
 
+async function unmodViaAPI(broadcasterId, userId) {
+  try {
+    const res = await fetch(`https://api.twitch.tv/helix/moderation/moderators?broadcaster_id=${broadcasterId}&user_id=${userId}`, {
+      method: 'DELETE',
+      headers: {
+        'Client-ID': CLIENT_ID,
+        'Authorization': `Bearer ${API_BEARER}`
+      }
+    });
+
+    const text = await res.text();
+    if (!res.ok) {
+      console.warn(`❌ Unmod failed: ${res.status} ${text}`);
+      return false;
+    }
+
+    console.log(`✅ Unmodded user ${userId} via API`);
+    return true;
+  } catch (err) {
+    console.error(`❌ API error unmodding user: ${err.message}`);
+    return false;
+  }
+}
+
 // === Message Queue ===
 function enqueueMessage(channel, msg) {
   messageQueue.push({ channel, msg });
@@ -363,14 +387,16 @@ async function runFight(fighterA, fighterB, channelLogin) {
     await sleep(1000);
     if (userLoginMap[loser]?.isMod) {
       wasModBeforeTimeout[loser] = true;
-      
-      client.say(channel,`/unmod ${userLoginMap[loser]?.login}`)
-      //enqueueMessage(channel, `🧼 Attempting to unmod ${userLoginMap[loser]?.login}`);
 
       console.log(`🧹 Scheduling unmod for ${loser}`);
-      //await sleep(1000); // slight delay
-      //enqueueMessage(channel, `/unmod ${userLoginMap[loser]?.login}`);
-      //client.say(channel,`/unmod ${userLoginMap[loser]?.login}`)
+      await sleep(1000); // slight delay
+      const loserUserId = userLoginMap[loser]?.userId;
+      const broadcasterId = userBroadcasterIdMap[channelLogin];
+      const unmodSuccess = await unmodViaAPI(broadcasterId, loserUserId);
+      if (!unmodSuccess) {
+        enqueueMessage(channel, `⚠️ Could not unmod ${loser}.`);
+      }
+      
 
 
       await sleep(2000); // allow unmod to process
