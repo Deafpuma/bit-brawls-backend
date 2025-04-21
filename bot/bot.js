@@ -522,4 +522,3 @@ if (require.main === module) {
   // Running directly (like `node bot.js`)
   startBot();
 }
-startBot();
