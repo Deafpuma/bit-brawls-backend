@@ -358,48 +358,38 @@ async function runFight(fighterA, fighterB, channelLogin) {
   await sleep(2000);
 
   const loserData = userLoginMap[loser];
-  if (loserData?.userId && wagerA > 0 && wagerB > 0) {
-    console.log(`🔍 ${loser} mod status:`, userLoginMap[loser]);
-    await sleep(1000);
-    if (userLoginMap[loser]?.isMod) {
-      wasModBeforeTimeout[loser] = true;
 
-      console.log(`🧹 Scheduling unmod for ${loser}`);
-      await sleep(1000); // slight delay
-      enqueueMessage(channel, `/unmod ${userLoginMap[loser]?.login}`);
-      enqueueMessage(channel, `/unmod ${loser}`);
-      //client.say(channel,`/unmod ${userLoginMap[loser]?.login}`)
+if (loserData?.userId && wagerA > 0 && wagerB > 0) {
+  console.log(`🔍 ${loser} mod status:`, loserData);
+  await sleep(1000);
 
+  const duration = Math.max(30, Math.min(Math.max(wagerA, wagerB), MAX_TIMEOUT_SECONDS));
+  const reason = getRandomKOReason();
 
-      await sleep(2000); // allow unmod to process
-    }
-    
-    
-    const duration = Math.max(30, Math.min(Math.max(wagerA, wagerB), MAX_TIMEOUT_SECONDS));
-    const success = await timeoutViaAPI(channelLogin, loserData.userId, duration);
-    const reason = getRandomKOReason();
-    //client.say(channel, `/timeout ${loser} ${duration} ${reason}`);
-    enqueueMessage(channel, `/timeout ${loser} ${duration} ${reason}`);
-
-    console.log(`✅ Timed out ${loser} for ${duration}s: ${reason}`);
-
-    if (wasModBeforeTimeout[loser]) {
-      console.log(`🔁 Remodding ${loser} in ${duration} seconds`);
-      setTimeout(() => {
-        setTimeout(() => {
-          enqueueMessage(channel, `🛡️ Re-modding ${userLoginMap[loser]?.login}`);
-
-          enqueueMessage(channel, `/mod ${userLoginMap[loser]?.login}`);
-
-          console.log(`✅ Remodded ${loser}`);
-          delete wasModBeforeTimeout[loser];
-        }, 1500); // slight delay to let /timeout settle
-      }, duration * 1000);
-      
-    }
-    
-    //if (!success) enqueueMessage(channel, `⚠️ Could not timeout ${loser}.`);
+  // If they are a mod, unmod first
+  if (loserData.isMod) {
+    wasModBeforeTimeout[loser] = true;
+    console.log(`🧹 Scheduling unmod for ${loser}`);
+    await sleep(500);
+    enqueueMessage(channel, `/unmod ${loser}`);
+    await sleep(1500); // Give Twitch time to process
   }
+
+  // Timeout via chat command (NOT the API)
+  enqueueMessage(channel, `/timeout ${loser} ${duration} ${reason}`);
+  console.log(`✅ Timed out ${loser} for ${duration}s: ${reason}`);
+
+  // Remod after timeout, if needed
+  if (wasModBeforeTimeout[loser]) {
+    console.log(`🔁 Will remod ${loser} in ${duration} seconds`);
+    setTimeout(() => {
+      enqueueMessage(channel, `🛡️ Re-modding ${loser}`);
+      enqueueMessage(channel, `/mod ${loser}`);
+      console.log(`✅ Remodded ${loser}`);
+      delete wasModBeforeTimeout[loser];
+    }, duration * 1000);
+  }
+}
 
   delete userBitWagers[fighterA.username];
   delete userBitWagers[fighterB.username];
