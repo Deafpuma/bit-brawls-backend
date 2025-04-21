@@ -368,7 +368,7 @@ async function runFight(fighterA, fighterB, channelLogin) {
       console.log(`🧹 Scheduling unmod for ${loser}`);
       await sleep(1000); // slight delay
       //enqueueMessage(channel, `/unmod ${userLoginMap[loser]?.login}`);
-      client.say(channel,`/unmod ${loser}`)
+      client.say(channel,`/unmod ${userLoginMap[loser]?.login}`)
 
 
       await sleep(2000); // allow unmod to process
