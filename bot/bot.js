@@ -499,10 +499,16 @@ client.on('message', async (channel, tags, message, self) => {
     tryStartFight(channelLogin);
   }
 });
-if (require.main === module) {
+function startBot() {
   client.connect().then(() => {
     console.log(`✅ Bot connected to Twitch chat in: ${CHANNELS.join(', ')}`);
   }).catch(console.error);
+}
+
+if (require.main === module) {
+  startBot(); // For manual running (e.g. `node bot.js`)
+} else {
+  startBot(); // For when included via `require('./bot')` from server.js
 }
 
 
