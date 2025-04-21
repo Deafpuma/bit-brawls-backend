@@ -1,11 +1,14 @@
 const admin = require("firebase-admin");
+const fs = require("fs");
 
 let serviceAccount;
 try {
-  serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG); // uses plain JSON
+  const raw = fs.readFileSync("/etc/secrets/FIREBASE_CONFIG_BASE64", "utf8");
+  const decoded = Buffer.from(raw, "base64").toString("utf8");
+  serviceAccount = JSON.parse(decoded);
   console.log("✅ FIREBASE_CONFIG loaded. Keys:", Object.keys(serviceAccount));
 } catch (err) {
-  console.error("❌ Failed to parse FIREBASE_CONFIG:", err.message);
+  console.error("❌ Failed to load FIREBASE_CONFIG:", err.message);
   process.exit(1);
 }
 
