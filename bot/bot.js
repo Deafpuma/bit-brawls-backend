@@ -314,6 +314,35 @@ async function unmodViaAPI(broadcasterId, userId, accessToken, clientId) {
 }
 
 
+async function modViaAPI(broadcasterId, userId, accessToken, clientId) {
+  try {
+    const res = await fetch(`https://api.twitch.tv/helix/moderation/moderators`, {
+      method: 'POST',
+      headers: {
+        'Client-ID': clientId,
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        broadcaster_id: broadcasterId,
+        user_id: userId
+      })
+    });
+
+    const text = await res.text();
+    if (!res.ok) {
+      console.warn(`❌ Remod failed: ${res.status} ${text}`);
+      return false;
+    }
+
+    console.log(`✅ Remodded user ${userId} via API`);
+    return true;
+  } catch (err) {
+    console.error(`❌ API error remodding user: ${err.message}`);
+    return false;
+  }
+}
+
 // === Fight ===
 function tryStartFight(channelLogin) {
   if (fightInProgress || challengeQueue.length < 2) return;
@@ -331,7 +360,6 @@ function tryStartFight(channelLogin) {
 async function runFight(fighterA, fighterB, channelLogin) {
   fightInProgress = true;
   const channel = `#${channelLogin}`;
-  
   const sleep = ms => new Promise(res => setTimeout(res, ms));
 
   const intro = getIntro(fighterA, fighterB);
@@ -346,57 +374,60 @@ async function runFight(fighterA, fighterB, channelLogin) {
 
   const winner = wagerA >= wagerB ? fighterA.username : fighterB.username;
   const loser = winner === fighterA.username ? fighterB.username : fighterA.username;
-
   const roast = getRoast(winner, loser);
   await client.say(channel, `🏆 ${winner} WINS! 💀 ${loser} KO'd! ${roast}`);
   await sleep(2000);
 
   const loserData = userLoginMap[loser];
+  if (loserData?.userId && wagerA > 0 && wagerB > 0) {
+    console.log(`🔍 ${loser} mod status:`, loserData);
+    await sleep(1000);
 
-if (loserData?.userId && wagerA > 0 && wagerB > 0) {
-  console.log(`🔍 ${loser} mod status:`, loserData);
-  await sleep(1000);
+    const duration = Math.max(30, Math.min(Math.max(wagerA, wagerB), MAX_TIMEOUT_SECONDS));
+    const reason = getRandomKOReason();
 
-  const duration = Math.max(30, Math.min(Math.max(wagerA, wagerB), MAX_TIMEOUT_SECONDS));
-  const reason = getRandomKOReason();
+    if (loserData.isMod) {
+      wasModBeforeTimeout[loser] = true;
+      console.log(`🧹 Scheduling unmod for ${loser}`);
+      await sleep(500);
 
-  // If they are a mod, unmod first
-  if (loserData.isMod) {
-    wasModBeforeTimeout[loser] = true;
-    console.log(`🧹 Scheduling unmod for ${loser}`);
-    await sleep(500);
-    const config = await getBroadcasterToken(channelLogin);
-    if (config?.access_token) {
-      const unmodSuccess = await unmodViaAPI(config.user_id, loserData.userId, config.access_token, process.env.TWITCH_CLIENT_ID);
-      if (!unmodSuccess) {
-        enqueueMessage(channel, `⚠️ Could not unmod ${loser}.`);
+      const config = await getBroadcasterToken(channelLogin);
+      if (config?.access_token) {
+        const unmodSuccess = await unmodViaAPI(config.user_id, loserData.userId, config.access_token, process.env.TWITCH_CLIENT_ID);
+        if (!unmodSuccess) {
+          enqueueMessage(channel, `⚠️ Could not unmod ${loser}.`);
+        }
+      } else {
+        enqueueMessage(channel, `⚠️ Missing broadcaster token for ${channelLogin}.`);
       }
-    } else {
-      enqueueMessage(channel, `⚠️ Missing broadcaster token for ${channelLogin}.`);
+      await sleep(1500); // Allow Twitch time to process
     }
-    await sleep(1500); // Give Twitch time to process
-  }
 
-  // Timeout via chat command (NOT the API)
-  enqueueMessage(channel, `/timeout ${loser} ${duration} ${reason}`);
-  console.log(`✅ Timed out ${loser} for ${duration}s: ${reason}`);
+    enqueueMessage(channel, `/timeout ${loser} ${duration} ${reason}`);
+    console.log(`✅ Timed out ${loser} for ${duration}s: ${reason}`);
 
-  // Remod after timeout, if needed
-  if (wasModBeforeTimeout[loser]) {
-    console.log(`🔁 Will remod ${loser} in ${duration} seconds`);
-    setTimeout(() => {
-      enqueueMessage(channel, `🛡️ Re-modding ${loser}`);
-      enqueueMessage(channel, `/mod ${loser}`);
-      console.log(`✅ Remodded ${loser}`);
-      delete wasModBeforeTimeout[loser];
-    }, duration * 1000);
+    if (wasModBeforeTimeout[loser]) {
+      console.log(`🔁 Will remod ${loser} in ${duration} seconds`);
+      setTimeout(async () => {
+        const config = await getBroadcasterToken(channelLogin);
+        if (config?.access_token) {
+          const remodSuccess = await modViaAPI(config.user_id, loserData.userId, config.access_token, process.env.TWITCH_CLIENT_ID);
+          if (remodSuccess) {
+            enqueueMessage(channel, `🛡️ ${loser} has been re-modded.`);
+          } else {
+            enqueueMessage(channel, `⚠️ Failed to remod ${loser}.`);
+          }
+        }
+        delete wasModBeforeTimeout[loser];
+      }, duration * 1000);
+    }
   }
-}
 
   delete userBitWagers[fighterA.username];
   delete userBitWagers[fighterB.username];
   fightInProgress = false;
 }
+
 
 // === Commands ===
 client.on('message', async (channel, tags, message, self) => {
