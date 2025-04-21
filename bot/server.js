@@ -63,6 +63,8 @@ app.get('/callback', async (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🌐 OAuth server running at http://0.0.0.0:${PORT}`);
 });
+process.env.START_BOT = 'false';
 require('./bot');
+
 
 
