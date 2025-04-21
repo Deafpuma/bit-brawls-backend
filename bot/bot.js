@@ -287,6 +287,40 @@ function getRandomKOReason() {
 }
 
 // === Timeout ===
+async function timeoutViaAPI(broadcasterId, userId, duration, reason, accessToken, clientId) {
+  try {
+    const res = await fetch(`https://api.twitch.tv/helix/moderation/bans`, {
+      method: 'POST',
+      headers: {
+        'Client-ID': clientId,
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        broadcaster_id: broadcasterId,
+        moderator_id: broadcasterId, // broadcaster acting as mod
+        data: {
+          user_id: userId,
+          duration: duration,
+          reason: reason
+        }
+      })
+    });
+
+    const text = await res.text();
+    if (!res.ok) {
+      console.warn(`❌ Timeout failed: ${res.status} ${text}`);
+      return false;
+    }
+
+    console.log(`✅ Timed out ${userId} via API for ${duration}s: ${reason}`);
+    return true;
+  } catch (err) {
+    console.error(`❌ Timeout API error: ${err.message}`);
+    return false;
+  }
+}
+
 async function unmodViaAPI(broadcasterId, userId, accessToken, clientId) {
 
   try {
@@ -403,8 +437,13 @@ async function runFight(fighterA, fighterB, channelLogin) {
       await sleep(1500); // Allow Twitch time to process
     }
 
-    enqueueMessage(channel, `/timeout ${loser} ${duration} ${reason}`);
-    console.log(`✅ Timed out ${loser} for ${duration}s: ${reason}`);
+    const timeoutSuccess = await timeoutViaAPI(config.user_id, loserData.userId, duration, reason, config.access_token, process.env.TWITCH_CLIENT_ID);
+    if (!timeoutSuccess) {
+      enqueueMessage(channel, `⚠️ Could not timeout ${loser}.`);
+    } else {
+      console.log(`✅ Timed out ${loser} via API for ${duration}s: ${reason}`);
+    }
+
 
     if (wasModBeforeTimeout[loser]) {
       console.log(`🔁 Will remod ${loser} in ${duration} seconds`);
