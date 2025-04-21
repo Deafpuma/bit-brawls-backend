@@ -68,11 +68,11 @@ app.get('/callback', async (req, res) => {
   // ✅ Save token to Firestore via config/firebase.js
   await firebase.saveBroadcasterToken(user.login, {
     user_id: user.id,
-    access_token: tokenData.access_token,
-    refresh_token: tokenData.refresh_token,
-    client_id: CLIENT_ID, 
-    login: user.login
+    login: user.login,
+    access_token: tokenData.access_token, // Do not prefix with 'oauth:'
+    client_id: CLIENT_ID // From .env (must match token)
   });
+  
   
 
   res.send(`✅ Bot added to <strong>${user.display_name}</strong>'s channel and token saved.`);
