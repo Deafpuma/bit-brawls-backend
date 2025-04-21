@@ -3,6 +3,8 @@ const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fet
 const fs = require('fs');
 require('dotenv').config();
 
+const { saveBroadcasterToken } = require("./config/firebase"); // ✅ Import this here
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -57,12 +59,19 @@ app.get('/callback', async (req, res) => {
     console.log(`✅ Authorized and added: ${user.login}`);
   }
 
-  res.send(`✅ Bot added to <strong>${user.display_name}</strong>'s channel.`);
+  // ✅ Save token to Firestore via config/firebase.js
+  await saveBroadcasterToken(user.login, {
+    user_id: user.id,
+    access_token: tokenData.access_token,
+    refresh_token: tokenData.refresh_token,
+    login: user.login
+  });
+
+  res.send(`✅ Bot added to <strong>${user.display_name}</strong>'s channel and token saved.`);
 });
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🌐 OAuth server running at http://0.0.0.0:${PORT}`);
 });
+
 require('./bot');
-
-
