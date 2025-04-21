@@ -363,10 +363,12 @@ async function runFight(fighterA, fighterB, channelLogin) {
   const loserData = userLoginMap[loser];
   if (loserData?.userId && wagerA > 0 && wagerB > 0) {
     console.log(`🔍 ${loser} mod status:`, userLoginMap[loser]);
+    await sleep(1000);
     if (userLoginMap[loser]?.isMod) {
       wasModBeforeTimeout[loser] = true;
       console.log(`🧹 Unmodding ${loser}`);
       client.say(channel, `/unmod ${loser}`);
+      await new Promise(res => setTimeout(res, 2000));
     }
     
     const duration = Math.max(30, Math.min(Math.max(wagerA, wagerB), MAX_TIMEOUT_SECONDS));
