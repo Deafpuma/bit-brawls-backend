@@ -519,6 +519,6 @@ function startBot() {
   }).catch(console.error);
 }
 
-if (require.main === module) {
-  startBot(); // only run if direct (for dev)
-}
+// ✅ Always run the bot when required OR run directly
+startBot();
+
