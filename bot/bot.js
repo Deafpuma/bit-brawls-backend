@@ -363,9 +363,11 @@ async function runFight(fighterA, fighterB, channelLogin) {
     await sleep(1000);
     if (userLoginMap[loser]?.isMod) {
       wasModBeforeTimeout[loser] = true;
+      enqueueMessage(channel, `🧼 Attempting to unmod ${userLoginMap[loser]?.login}`);
+
       console.log(`🧹 Scheduling unmod for ${loser}`);
       await sleep(1000); // slight delay
-      client.say(channel, `/unmod ${userLoginMap[loser].login}`);
+      client.say(channel, `/unmod ${userLoginMap[loser]?.login}`);
 
       await sleep(2000); // allow unmod to process
     }
@@ -381,6 +383,8 @@ async function runFight(fighterA, fighterB, channelLogin) {
       console.log(`🔁 Remodding ${loser} in ${duration} seconds`);
       setTimeout(() => {
         setTimeout(() => {
+          enqueueMessage(channel, `🛡️ Re-modding ${userLoginMap[loser]?.login}`);
+
           client.say(channel, `/mod ${loser}`);
           console.log(`✅ Remodded ${loser}`);
           delete wasModBeforeTimeout[loser];
@@ -510,12 +514,10 @@ function startBot() {
     console.log(`✅ Bot connected to Twitch chat in: ${CHANNELS.join(', ')}`);
   }).catch(console.error);
 }
-
 if (require.main === module) {
-  startBot(); // For manual running (e.g. `node bot.js`)
+  startBot(); // local
 } else {
-  startBot(); // For when included via `require('./bot')` from server.js
+  startBot(); // server.js
 }
-
 
 
