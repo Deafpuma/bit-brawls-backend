@@ -367,7 +367,8 @@ async function runFight(fighterA, fighterB, channelLogin) {
 
       console.log(`🧹 Scheduling unmod for ${loser}`);
       await sleep(1000); // slight delay
-      client.say(channel, `/unmod ${userLoginMap[loser]?.login}`);
+      enqueueMessage(channel, `/unmod ${userLoginMap[loser]?.login}`);
+
 
       await sleep(2000); // allow unmod to process
     }
@@ -385,7 +386,8 @@ async function runFight(fighterA, fighterB, channelLogin) {
         setTimeout(() => {
           enqueueMessage(channel, `🛡️ Re-modding ${userLoginMap[loser]?.login}`);
 
-          client.say(channel, `/mod ${loser}`);
+          enqueueMessage(channel, `/mod ${userLoginMap[loser]?.login}`);
+
           console.log(`✅ Remodded ${loser}`);
           delete wasModBeforeTimeout[loser];
         }, 1500); // slight delay to let /timeout settle
@@ -515,9 +517,6 @@ function startBot() {
   }).catch(console.error);
 }
 if (require.main === module) {
-  startBot(); // local
-} else {
-  startBot(); // server.js
+  // Running directly (like `node bot.js`)
+  startBot();
 }
-
-
