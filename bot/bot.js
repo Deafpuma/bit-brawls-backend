@@ -282,43 +282,30 @@ function getRandomKOReason() {
 }
 
 // === Timeout ===
-async function timeoutViaAPI(channelLogin, userId, duration) {
-  const broadcasterId = userBroadcasterIdMap[channelLogin];
-  if (!broadcasterId || !userId) return false;
-  const reason = getRandomKOReason();
-
+async function unmodViaAPI(broadcasterId, userId, accessToken) {
   try {
-    const res = await fetch('https://api.twitch.tv/helix/moderation/bans', {
-      method: 'POST',
+    const res = await fetch(`https://api.twitch.tv/helix/moderation/moderators?broadcaster_id=${broadcasterId}&user_id=${userId}`, {
+      method: 'DELETE',
       headers: {
         'Client-ID': CLIENT_ID,
-        'Authorization': `Bearer ${API_BEARER}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        broadcaster_id: broadcasterId,
-        moderator_id: MODERATOR_ID,
-        data: {
-          user_id: userId,
-          duration,
-          reason
-        }
-      })
+        'Authorization': `Bearer ${accessToken}`
+      }
     });
 
     const text = await res.text();
     if (!res.ok) {
-      console.warn("⚠️ Timeout failed:", res.status, text);
+      console.warn(`❌ Unmod failed: ${res.status} ${text}`);
       return false;
     }
 
-    console.log(`✅ Timed out ${userId} for ${duration}s: ${reason}`);
+    console.log(`✅ Unmodded user ${userId} via API`);
     return true;
   } catch (err) {
-    console.warn("❌ Timeout API error:", err.message);
+    console.error(`❌ API error unmodding user: ${err.message}`);
     return false;
   }
 }
+
 
 // === Fight ===
 function tryStartFight(channelLogin) {
@@ -371,7 +358,15 @@ if (loserData?.userId && wagerA > 0 && wagerB > 0) {
     wasModBeforeTimeout[loser] = true;
     console.log(`🧹 Scheduling unmod for ${loser}`);
     await sleep(500);
-    enqueueMessage(channel, `/unmod ${loser}`);
+    const config = await getBroadcasterToken(channelLogin);
+    if (config?.access_token) {
+      const unmodSuccess = await unmodViaAPI(config.user_id, loserData.userId, config.access_token);
+      if (!unmodSuccess) {
+        enqueueMessage(channel, `⚠️ Could not unmod ${loser}.`);
+      }
+    } else {
+      enqueueMessage(channel, `⚠️ Missing broadcaster token for ${channelLogin}.`);
+    }
     await sleep(1500); // Give Twitch time to process
   }
 
