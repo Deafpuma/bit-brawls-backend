@@ -26,7 +26,7 @@ function loadAuthorizedChannels() {
 app.get('/', (req, res) => {
   res.send(`
     <h1>🧠 Bit Brawls Bot</h1>
-    <a href="https://id.twitch.tv/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=https://bit-brawls-backend.onrender.com/callback&response_type=code&scope=moderation:read+moderator:manage:banned_users+chat:read+chat:edit">Authorize Bot</a>
+    <a href="https://id.twitch.tv/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=https://bit-brawls-backend.onrender.com/callback&response_type=code&scope=moderation:read+moderator:manage:banned_users+chat:read+chat:edit+channel:manage:moderators">Authorize Bot</a>
   `);
 });
 
