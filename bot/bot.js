@@ -367,7 +367,7 @@ if (loserData?.userId && wagerA > 0 && wagerB > 0) {
     await sleep(500);
     const config = await getBroadcasterToken(channelLogin);
     if (config?.access_token) {
-      const unmodSuccess = await unmodViaAPI(config.user_id, loserData.userId, config.access_token, config.client_id);
+      const unmodSuccess = await unmodViaAPI(config.user_id, loserData.userId, config.access_token, process.env.TWITCH_CLIENT_ID);
       if (!unmodSuccess) {
         enqueueMessage(channel, `⚠️ Could not unmod ${loser}.`);
       }
