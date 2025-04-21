@@ -362,18 +362,24 @@ async function runFight(fighterA, fighterB, channelLogin) {
 
   const loserData = userLoginMap[loser];
   if (loserData?.userId && wagerA > 0 && wagerB > 0) {
+    console.log(`🔍 ${loser} mod status:`, userLoginMap[loser]);
     if (userLoginMap[loser]?.isMod) {
       wasModBeforeTimeout[loser] = true;
+      console.log(`🧹 Unmodding ${loser}`);
       client.say(channel, `/unmod ${loser}`);
     }
+    
     const duration = Math.max(30, Math.min(Math.max(wagerA, wagerB), MAX_TIMEOUT_SECONDS));
     const success = await timeoutViaAPI(channelLogin, loserData.userId, duration);
     if (wasModBeforeTimeout[loser]) {
+      console.log(`🔁 Remodding ${loser} in ${duration} seconds`);
       setTimeout(() => {
         client.say(channel, `/mod ${loser}`);
-        delete wasModBeforeTimeout[loser]; // Clean up
+        console.log(`✅ Remodded ${loser}`);
+        delete wasModBeforeTimeout[loser];
       }, duration * 1000);
     }
+    
     if (!success) enqueueMessage(channel, `⚠️ Could not timeout ${loser}.`);
   }
 
