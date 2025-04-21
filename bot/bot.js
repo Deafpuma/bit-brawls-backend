@@ -20,9 +20,6 @@ const client = new tmi.Client({
   channels: CHANNELS
 });
 
-client.connect().then(() => {
-  console.log(`✅ Bot connected to Twitch chat in: ${CHANNELS.join(', ')}`);
-}).catch(console.error);
 
 // === Bot State ===
 let challengeQueue = [];
@@ -372,7 +369,11 @@ async function runFight(fighterA, fighterB, channelLogin) {
     }
     
     const duration = Math.max(30, Math.min(Math.max(wagerA, wagerB), MAX_TIMEOUT_SECONDS));
-    const success = await timeoutViaAPI(channelLogin, loserData.userId, duration);
+    //const success = await timeoutViaAPI(channelLogin, loserData.userId, duration);
+    const reason = getRandomKOReason();
+    client.say(channel, `/timeout ${loser} ${duration} ${reason}`);
+    console.log(`✅ Timed out ${loser} for ${duration}s: ${reason}`);
+
     if (wasModBeforeTimeout[loser]) {
       console.log(`🔁 Remodding ${loser} in ${duration} seconds`);
       setTimeout(() => {
@@ -498,5 +499,11 @@ client.on('message', async (channel, tags, message, self) => {
     tryStartFight(channelLogin);
   }
 });
+if (require.main === module) {
+  client.connect().then(() => {
+    console.log(`✅ Bot connected to Twitch chat in: ${CHANNELS.join(', ')}`);
+  }).catch(console.error);
+}
+
 
 
