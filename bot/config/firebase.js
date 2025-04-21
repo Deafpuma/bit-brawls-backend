@@ -1,5 +1,8 @@
 const admin = require("firebase-admin");
-const serviceAccount = require("/etc/secrets/firebaseServiceAccount"); // 👈 loaded from Render secret
+const fs = require("fs");
+
+// 🔥 Load and parse the secret manually
+const serviceAccount = JSON.parse(fs.readFileSync("/etc/secrets/firebaseServiceAccount", "utf8"));
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
