@@ -377,7 +377,9 @@ async function runFight(fighterA, fighterB, channelLogin) {
     const duration = Math.max(30, Math.min(Math.max(wagerA, wagerB), MAX_TIMEOUT_SECONDS));
     //const success = await timeoutViaAPI(channelLogin, loserData.userId, duration);
     const reason = getRandomKOReason();
-    client.say(channel, `/timeout ${loser} ${duration} ${reason}`);
+    //client.say(channel, `/timeout ${loser} ${duration} ${reason}`);
+    enqueueMessage(channel, `/timeout ${loser} ${duration} ${reason}`);
+
     console.log(`✅ Timed out ${loser} for ${duration}s: ${reason}`);
 
     if (wasModBeforeTimeout[loser]) {
