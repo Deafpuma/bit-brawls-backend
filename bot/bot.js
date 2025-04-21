@@ -421,31 +421,44 @@ async function runFight(fighterA, fighterB, channelLogin) {
     const duration = Math.max(30, Math.min(Math.max(wagerA, wagerB), MAX_TIMEOUT_SECONDS));
     const reason = getRandomKOReason();
 
-    if (loserData.isMod) {
+    const config = await getBroadcasterToken(channelLogin);
+
+    if (loserData.isMod && config?.access_token) {
       wasModBeforeTimeout[loser] = true;
       console.log(`🧹 Scheduling unmod for ${loser}`);
       await sleep(500);
 
-      const config = await getBroadcasterToken(channelLogin);
-        }
+      const unmodSuccess = await unmodViaAPI(config.user_id, loserData.userId, config.access_token, process.env.TWITCH_CLIENT_ID);
+      if (!unmodSuccess) {
+        enqueueMessage(channel, `⚠️ Could not unmod ${loser}.`);
+      }
+
+      await sleep(1500); // allow Twitch time to process
+    }
+
+    const timeoutSuccess = await timeoutViaAPI(
+      config.user_id,
+      loserData.userId,
+      duration,
+      reason,
+      config.access_token,
+      process.env.TWITCH_CLIENT_ID
+    );
+
     if (!timeoutSuccess) {
       enqueueMessage(channel, `⚠️ Could not timeout ${loser}.`);
     } else {
       console.log(`✅ Timed out ${loser} via API for ${duration}s: ${reason}`);
     }
 
-
     if (wasModBeforeTimeout[loser]) {
       console.log(`🔁 Will remod ${loser} in ${duration} seconds`);
       setTimeout(async () => {
-        const config = await getBroadcasterToken(channelLogin);
-        if (config?.access_token) {
-          const remodSuccess = await modViaAPI(config.user_id, loserData.userId, config.access_token, process.env.TWITCH_CLIENT_ID);
-          if (remodSuccess) {
-            enqueueMessage(channel, `🛡️ ${loser} has been re-modded.`);
-          } else {
-            enqueueMessage(channel, `⚠️ Failed to remod ${loser}.`);
-          }
+        const remodSuccess = await modViaAPI(config.user_id, loserData.userId, config.access_token, process.env.TWITCH_CLIENT_ID);
+        if (remodSuccess) {
+          enqueueMessage(channel, `🛡️ ${loser} has been re-modded.`);
+        } else {
+          enqueueMessage(channel, `⚠️ Failed to remod ${loser}.`);
         }
         delete wasModBeforeTimeout[loser];
       }, duration * 1000);
@@ -456,6 +469,7 @@ async function runFight(fighterA, fighterB, channelLogin) {
   delete userBitWagers[fighterB.username];
   fightInProgress = false;
 }
+
 
 
 // === Commands ===
