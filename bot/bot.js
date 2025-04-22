@@ -36,6 +36,8 @@ let sendingMessages = false;
 const wasModBeforeTimeout = {};
 const MAX_TIMEOUT_SECONDS = 60;
 
+let blindBrawlTimeouts = {}; 
+
 
 let channelTimeoutSettings = {};
 
@@ -567,6 +569,11 @@ client.on('message', async (channel, tags, message, self) => {
         delete pendingChallenges[target];
       }
     }
+    if (pendingBlindBrawlers[username]) {
+      clearTimeout(blindBrawlTimeouts[username]);
+      delete pendingBlindBrawlers[username];
+      delete blindBrawlTimeouts[username];
+    }
     delete userBitWagers[username];
     return enqueueMessage(channel, `🚪 ${username} left the brawl queue.`);
   }
@@ -634,10 +641,16 @@ client.on('message', async (channel, tags, message, self) => {
 
     if (isBlind) {
       pendingBlindBrawlers[login] = channelLogin;
-      enqueueMessage(channel, `🤫 @${username}, whisper me how many Bits you want to wager.`);
+      blindBrawlTimeouts[login] = setTimeout(() => {
+        delete pendingBlindBrawlers[login];
+        enqueueMessage(channel, `⌛ ${username}'s blind brawl timed out. They vanished into the mist... 🫥`);
+      }, 60000); // ⏱ 60 seconds to respond
+
+      const blindMsg = getBlindMessage(username);
+
+      enqueueMessage(channel, blindMsg, `🤫 @${username}, whisper me how many Bits you want to wager (must be 5 or more)..`);
       return;
     }
-    
 
     if (bitWager < 5) bitWager = 5;
     userBitWagers[username] = bitWager;
@@ -674,20 +687,27 @@ client.on('whisper', (from, userstate, message) => {
   const bitAmount = parseInt(message.trim());
 
   if (!channelLogin) return;
+
   if (isNaN(bitAmount) || bitAmount < 5) {
+    client.say(`#${channelLogin}`, `⚠️ ${login}, please whisper a valid number of Bits (minimum is 5).`);
+    clearTimeout(blindBrawlTimeouts[login]);
     delete pendingBlindBrawlers[login];
+    delete blindBrawlTimeouts[login];
     return;
   }
+
+  clearTimeout(blindBrawlTimeouts[login]);
+  delete blindBrawlTimeouts[login];
+  delete pendingBlindBrawlers[login];
 
   userBitWagers[login] = bitAmount;
   const challenger = { username: login, target: null, paid: true };
   challengeQueue.push(challenger);
 
-  const msg = getBlindMessage(login); // ✅ reuse your existing function
+  const msg = getBlindMessage(login); // ✅ Reuses your silly message list
   enqueueMessage(`#${channelLogin}`, msg);
 
   tryStartFight(channelLogin);
-  delete pendingBlindBrawlers[login];
 });
 
 
