@@ -79,52 +79,67 @@
     </ul>
   </div>
 
-  <script src="https://extension-files.twitch.tv/helper/v1/twitch-ext.min.js"></script>
   <script>
-    function loadLeaderboard(channelLogin) {
-      fetch(`/leaderboard/${channelLogin}`)
-        .then(res => res.json())
-        .then(data => {
-          const list = document.getElementById("leaderboard-list");
-          list.innerHTML = "";
-
-          if (!data.length) {
-            list.innerHTML = `<li class="error">No brawls yet for this channel.</li>`;
-            return;
-          }
-
-          data.forEach((player, index) => {
-            list.innerHTML += `
-              <li>
-                <span class="rank">#${index + 1}</span>
-                <span class="name">${player.username}</span>
-                <span class="stats">${player.wins || 0}W / ${player.losses || 0}L • ${player.kos || 0} KO • 🔥 ${player.streak || 0} Streak</span>
-              </li>
-            `;
-          });
-        })
-        .catch(err => {
-          document.getElementById("leaderboard-list").innerHTML =
-            `<li class="error">Failed to load leaderboard.</li>`;
-          console.error(err);
-        });
+    async function fetchLoginFromId(channelId) {
+      try {
+        const res = await fetch(`/resolve-login/${channelId}`);
+        const json = await res.json();
+        return json.login || null;
+      } catch (err) {
+        console.error("❌ Failed to resolve login from ID:", err);
+        return null;
+      }
     }
 
-    // ✅ Use Twitch Extension context to get channel login name
+    async function loadLeaderboard(login) {
+      if (!login) return;
+      try {
+        const res = await fetch(`/leaderboard/${login}`);
+        const data = await res.json();
+        const list = document.getElementById("leaderboard-list");
+        list.innerHTML = "";
+
+        if (!data.length) {
+          list.innerHTML = `<li class="error">No brawls yet for this channel.</li>`;
+          return;
+        }
+
+        data.forEach((player, index) => {
+          list.innerHTML += `
+            <li>
+              <span class="rank">#${index + 1}</span>
+              <span class="name">${player.username}</span>
+              <span class="stats">
+                ${player.wins || 0}W / ${player.losses || 0}L
+                • ${player.kos || 0} KO
+                • 🔥 ${player.streak || 0} Streak
+              </span>
+            </li>
+          `;
+        });
+      } catch (err) {
+        document.getElementById("leaderboard-list").innerHTML =
+          `<li class="error">Failed to load leaderboard.</li>`;
+        console.error(err);
+      }
+    }
+
+    // Use Twitch Extension context to get userId and resolve to login
     if (window.Twitch && window.Twitch.ext) {
-      window.Twitch.ext.onAuthorized(auth => {
-        // Get broadcaster login from auth (should match stored path)
-        const channelLogin = auth.channelId?.toLowerCase(); // Assuming login is same as userId name
-        if (channelLogin) loadLeaderboard(channelLogin);
+      window.Twitch.ext.onAuthorized(async (auth) => {
+        const channelId = auth.channelId;
+        const login = await fetchLoginFromId(channelId);
+        if (login) {
+          loadLeaderboard(login);
+          setInterval(() => loadLeaderboard(login), 10000);
+        }
       });
     } else {
       // Fallback for browser testing (?channel=deafpuma)
       const fallback = new URLSearchParams(window.location.search).get("channel") || "deafpuma";
       loadLeaderboard(fallback);
+      setInterval(() => loadLeaderboard(fallback), 10000);
     }
   </script>
-
-  
-  
 </body>
 </html>
