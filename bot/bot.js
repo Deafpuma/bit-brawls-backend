@@ -442,23 +442,37 @@ async function sendWhisper(fromUserId, toUserId, message, accessToken, clientId)
     return false;
   }
 }
-async function updateLeaderboard(winner, loser, bitsA, bitsB) {
-  const db = require('./config/firebase').db;
 
-  const winnerRef = db.collection("leaderboard").doc(winner);
-  const loserRef = db.collection("leaderboard").doc(loser);
 
-  await winnerRef.set({
-    wins: 1,
-    totalBits: bitsA || 0
-  }, { merge: true });
+async function updateLeaderboard(winner, loser, wagerA, wagerB, broadcaster) {
+  const ref = db.collection("leaderboards").doc(broadcaster).collection("players");
 
-  await loserRef.set({
-    losses: 1,
-    totalBits: bitsB || 0
-  }, { merge: true });
+  const winnerRef = ref.doc(winner);
+  const loserRef = ref.doc(loser);
+
+  const winnerSnap = await winnerRef.get();
+  const loserSnap = await loserRef.get();
+
+  const winnerData = winnerSnap.exists ? winnerSnap.data() : { wins: 0, losses: 0, streak: 0, kos: 0 };
+  const loserData = loserSnap.exists ? loserSnap.data() : { wins: 0, losses: 0, streak: 0, kos: 0 };
+
+  const newWinner = {
+    wins: (winnerData.wins || 0) + 1,
+    losses: winnerData.losses || 0,
+    streak: (winnerData.streak || 0) + 1,
+    kos: (winnerData.kos || 0) + 1
+  };
+
+  const newLoser = {
+    wins: loserData.wins || 0,
+    losses: (loserData.losses || 0) + 1,
+    streak: 0,
+    kos: loserData.kos || 0
+  };
+
+  await winnerRef.set(newWinner, { merge: true });
+  await loserRef.set(newLoser, { merge: true });
 }
-
 
 
 
@@ -576,7 +590,8 @@ async function runFight(fighterA, fighterB, channelLogin) {
     }
   }
 
-  await updateLeaderboard(winner, loser, wagerA, wagerB);
+  await updateLeaderboard(winner, loser, wagerA, wagerB, channelLogin);
+
 
   delete userBitWagers[fighterA.username];
   delete userBitWagers[fighterB.username];
