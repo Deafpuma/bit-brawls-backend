@@ -445,36 +445,36 @@ async function sendWhisper(fromUserId, toUserId, message, accessToken, clientId)
 }
 
 
-async function updateLeaderboard(winner, loser, wagerA, wagerB, broadcaster) {
-  const ref = db.collection("leaderboards").doc(broadcaster).collection("players");
+async function updateLeaderboard(winner, loser, wagerA, wagerB, broadcasterLogin) {
+  const winnerRef = db.collection("leaderboards")
+    .doc(broadcasterLogin) // ✅ Use login, not displayName or ID
+    .collection("players")
+    .doc(winner);
 
-  const winnerRef = ref.doc(winner);
-  const loserRef = ref.doc(loser);
+  const loserRef = db.collection("leaderboards")
+    .doc(broadcasterLogin)
+    .collection("players")
+    .doc(loser);
 
-  const winnerSnap = await winnerRef.get();
-  const loserSnap = await loserRef.get();
+  await db.runTransaction(async (transaction) => {
+    const winSnap = await transaction.get(winnerRef);
+    const lossSnap = await transaction.get(loserRef);
 
-  const winnerData = winnerSnap.exists ? winnerSnap.data() : { wins: 0, losses: 0, streak: 0, kos: 0 };
-  const loserData = loserSnap.exists ? loserSnap.data() : { wins: 0, losses: 0, streak: 0, kos: 0 };
+    const winData = winSnap.exists ? winSnap.data() : { wins: 0, losses: 0, kos: 0, streak: 0 };
+    const lossData = lossSnap.exists ? lossSnap.data() : { wins: 0, losses: 0, kos: 0, streak: 0 };
 
-  const newWinner = {
-    wins: (winnerData.wins || 0) + 1,
-    losses: winnerData.losses || 0,
-    streak: (winnerData.streak || 0) + 1,
-    kos: (winnerData.kos || 0) + 1
-  };
+    transaction.set(winnerRef, {
+      wins: winData.wins + 1,
+      kos: winData.kos + 1,
+      streak: winData.streak + 1
+    }, { merge: true });
 
-  const newLoser = {
-    wins: loserData.wins || 0,
-    losses: (loserData.losses || 0) + 1,
-    streak: 0,
-    kos: loserData.kos || 0
-  };
-
-  await winnerRef.set(newWinner, { merge: true });
-  await loserRef.set(newLoser, { merge: true });
+    transaction.set(loserRef, {
+      losses: lossData.losses + 1,
+      streak: 0
+    }, { merge: true });
+  });
 }
-
 
 
 
