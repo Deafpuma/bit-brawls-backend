@@ -124,7 +124,7 @@
       if (window.Twitch && window.Twitch.ext) {
         window.Twitch.ext.onAuthorized(async (auth) => {
           const channelId = auth.channelId;
-          const login = await resolveLogin(channelId);
+          const login = auth.userId.toLowerCase();
           if (login) {
             loadLeaderboard(login);
             setInterval(() => loadLeaderboard(login), 10000);
