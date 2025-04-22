@@ -6,6 +6,8 @@ const firebase = require("./config/firebase");
 const { db } = firebase;
 
 const app = express();
+module.exports = app;
+
 const PORT = process.env.PORT || 3000;
 const CLIENT_ID = process.env.TWITCH_CLIENT_ID;
 const CLIENT_SECRET = process.env.TWITCH_CLIENT_SECRET;

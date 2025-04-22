@@ -5,6 +5,7 @@ require('dotenv').config();
 
 const { getBroadcasterToken } = require("./config/firebase");
 
+const appRef = require('./server');
 
 const CHAT_OAUTH = process.env.CHAT_OAUTH;
 const API_BEARER = process.env.API_BEARER;
