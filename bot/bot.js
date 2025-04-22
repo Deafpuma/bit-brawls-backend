@@ -7,6 +7,9 @@ const { getBroadcasterToken } = require("./config/firebase");
 
 const appRef = require('./server');
 
+const { db } = require('./config/firebase');
+
+
 const CHAT_OAUTH = process.env.CHAT_OAUTH;
 const API_BEARER = process.env.API_BEARER;
 const CLIENT_ID = process.env.CLIENT_ID;
