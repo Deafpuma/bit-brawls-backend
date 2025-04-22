@@ -83,6 +83,39 @@ app.get("/leaderboard/:broadcaster", async (req, res) => {
   res.json(data);
 });
 
+let lastFightData = null;
+app.setLastFight = (data) => {
+  lastFightData = data;
+};
+app.get('/latest-fight', (req, res) => {
+  if (!lastFightData) {
+    return res.status(404).json({ error: 'No fights yet' });
+  }
+  res.json(lastFightData);
+});
+
+app.delete('/leaderboard/:broadcaster/reset', async (req, res) => {
+  const { broadcaster } = req.params;
+
+  try {
+    const ref = db.collection("leaderboards").doc(broadcaster).collection("players");
+    const snapshot = await ref.get();
+
+    const batch = db.batch();
+    snapshot.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+
+    await batch.commit();
+    res.json({ message: `Leaderboard for ${broadcaster} has been reset.` });
+  } catch (err) {
+    console.error("❌ Error resetting leaderboard:", err.message);
+    res.status(500).json({ error: "Failed to reset leaderboard." });
+  }
+});
+
+
+
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🌐 OAuth server running at http://0.0.0.0:${PORT}`);
 });

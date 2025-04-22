@@ -506,6 +506,17 @@ async function runFight(fighterA, fighterB, channelLogin) {
   await client.say(channel, `🏆 ${winner} WINS! 💀 ${loser} KO'd! ${roast}`);
   await sleep(2000);
 
+  const lastFight = {
+    winner,
+    loser,
+    intro,
+    roast,
+    timestamp: Date.now()
+  };
+  
+  const appRef = require('./server'); // make sure this is at the top
+  appRef.setLastFight(lastFight);
+
   const loserData = userLoginMap[loser];
   if (loserData?.userId && wagerA > 0 && wagerB > 0) {
     console.log(`🔍 ${loser} mod status:`, loserData);
@@ -610,6 +621,28 @@ client.on('message', async (channel, tags, message, self) => {
     isBroadcaster: tags.badges?.broadcaster === '1'
   };
   userBroadcasterIdMap[channelLogin] = tags['room-id'];
+
+
+  if (lowerMsg === '!resetboard' && isBroadcaster) {
+    try {
+      const ref = db.collection("leaderboards").doc(channelLogin).collection("players");
+      const snapshot = await ref.get();
+
+      if (snapshot.empty) {
+        return enqueueMessage(channel, `📉 Leaderboard is already empty.`);
+      }
+
+      const batch = db.batch();
+      snapshot.forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
+
+      enqueueMessage(channel, `🧹 Leaderboard for ${channelLogin} has been reset.`);
+    } catch (err) {
+      console.error("❌ Failed to reset leaderboard:", err.message);
+      enqueueMessage(channel, `⚠️ Failed to reset the leaderboard.`);
+    }
+  }
+
 
   if (lowerMsg === '!mybet') {
     const bet = userBitWagers[username] || 0;
