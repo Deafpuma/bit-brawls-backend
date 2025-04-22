@@ -77,7 +77,7 @@
         return null;
       }
     }
-
+  
     async function loadLeaderboard(login) {
       if (!login) return;
       try {
@@ -85,12 +85,12 @@
         const data = await res.json();
         const list = document.getElementById("leaderboard-list");
         list.innerHTML = "";
-
+  
         if (!data.length) {
           list.innerHTML = `<li class="error">No brawls yet for this channel.</li>`;
           return;
         }
-
+  
         data.forEach((player, index) => {
           list.innerHTML += `
             <li>
@@ -110,7 +110,7 @@
         console.error(err);
       }
     }
-
+  
     function startPanel() {
       if (window.Twitch && window.Twitch.ext) {
         window.Twitch.ext.onAuthorized(async (auth) => {
@@ -118,7 +118,7 @@
           const login = await resolveLogin(channelId);
           if (login) {
             loadLeaderboard(login);
-            setInterval(() => loadLeaderboard(login), 10000);
+            setInterval(() => loadLeaderboard(login), 10000); // refresh every 10s
           } else {
             document.getElementById("leaderboard-list").innerHTML =
               `<li class="error">Could not resolve Twitch login.</li>`;
@@ -130,8 +130,9 @@
         setInterval(() => loadLeaderboard(fallback), 10000);
       }
     }
-
+  
     startPanel();
   </script>
+  
 </body>
 </html>
