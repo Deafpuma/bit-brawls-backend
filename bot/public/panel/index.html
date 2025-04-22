@@ -3,116 +3,119 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Bit Brawls - Live Fights</title>
+  <title>Bit Brawls Leaderboard</title>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      background: #121212;
+      background: #0e0e10;
       color: #f1f1f1;
       margin: 0;
       padding: 1rem;
     }
-    h1, h2 {
+
+    h1 {
       text-align: center;
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
       color: #ffcc00;
     }
-    .fight, .leaderboard {
-      background: #1e1e1e;
-      border: 1px solid #333;
-      border-radius: 8px;
-      padding: 0.75rem;
-      margin: 1rem auto;
+
+    .leaderboard {
+      background: #1f1f23;
+      border: 1px solid #3a3a3d;
+      border-radius: 10px;
+      padding: 1rem;
       max-width: 600px;
+      margin: 0 auto;
     }
-    .fight p, .leaderboard li {
-      margin: 0.25rem 0;
+
+    ul {
+      list-style: none;
+      padding: 0;
     }
-    .winner {
+
+    li {
+      padding: 0.5rem;
+      border-bottom: 1px solid #333;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    li:last-child {
+      border-bottom: none;
+    }
+
+    .rank {
+      color: #ffcc00;
+      font-weight: bold;
+    }
+
+    .name {
+      flex: 1;
+      margin-left: 0.5rem;
+    }
+
+    .stats {
+      color: #aaa;
+    }
+
+    .highlight {
       color: #00ff88;
     }
-    .loser {
-      color: #ff4444;
-    }
-    .leaderboard ul {
-      padding-left: 1rem;
-    }
-    .leaderboard li {
-      list-style: none;
-      padding: 0.25rem 0;
-      font-size: 1rem;
-    }
-    .leaderboard li::before {
-      content: '🥇';
-      margin-right: 0.5rem;
-    }
-    .gold {
-      color: gold;
-    }
-    .silver {
-      color: silver;
-    }
-    .bronze {
-      color: #cd7f32;
+
+    .error {
+      text-align: center;
+      color: red;
     }
   </style>
 </head>
 <body>
-  <h1>🔥 Bit Brawls - Live Fights</h1>
-  <div id="fightList" class="fight">
-    <p>Loading last fight...</p>
-  </div>
-
-  <h2>🏆 Top Fighters</h2>
-  <div id="leaderboard" class="leaderboard">
+  <h1>🏆 Bit Brawls Leaderboard</h1>
+  <div class="leaderboard">
     <ul id="leaderboard-list">
       <li>Loading leaderboard...</li>
     </ul>
   </div>
 
   <script>
-    async function loadFights() {
-      try {
-        const res = await fetch('/latest-fight');
-        const fight = await res.json();
-        const fightList = document.getElementById('fightList');
-        fightList.innerHTML = '';
+    function getChannel() {
+      // Pull channel login from Twitch Extension iframe URL
+      const params = new URLSearchParams(window.location.search);
+      return params.get("channel") || "deafpuma"; // fallback default
+    }
 
-        const div = document.createElement('div');
-        div.className = 'fight';
-        div.innerHTML = `
-          <p><strong class="winner">${fight.winner}</strong> vs <strong class="loser">${fight.loser}</strong></p>
-          <p>${fight.intro}</p>
-          <p>${fight.roast || 'No roast recorded.'}</p>
-        `;
-        fightList.appendChild(div);
+    async function loadLeaderboard() {
+      const channel = getChannel();
+      try {
+        const res = await fetch(`/leaderboard/${channel}`);
+        const data = await res.json();
+        const list = document.getElementById("leaderboard-list");
+        list.innerHTML = "";
+
+        if (!data.length) {
+          list.innerHTML = `<li class="error">No brawls yet for this channel.</li>`;
+          return;
+        }
+
+        data.forEach((player, index) => {
+          list.innerHTML += `
+            <li>
+              <span class="rank">#${index + 1}</span>
+              <span class="name">${player.username}</span>
+              <span class="stats">${player.wins || 0}W - ${player.losses || 0}L</span>
+            </li>
+          `;
+        });
       } catch (err) {
-        document.getElementById('fightList').innerHTML = `<p>Error loading fight.</p>`;
+        document.getElementById("leaderboard-list").innerHTML =
+          `<li class="error">Failed to load leaderboard.</li>`;
         console.error(err);
       }
     }
 
-    async function loadLeaderboard() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const channel = urlParams.get("channel");
-      if (!channel) return document.getElementById("leaderboard-list").innerHTML = '<li>No channel provided.</li>';
-      const res = await fetch(`/leaderboard/${channel}`);
-      const data = await res.json();
-
-      const list = document.getElementById("leaderboard-list");
-      list.innerHTML = '';
-      data.forEach((player, index) => {
-        let colorClass = '';
-        if (index === 0) colorClass = 'gold';
-        else if (index === 1) colorClass = 'silver';
-        else if (index === 2) colorClass = 'bronze';
-
-        list.innerHTML += `<li class="${colorClass}">#${index + 1} <strong>${player.username}</strong> - ${player.wins || 0}W / ${player.losses || 0}L</li>`;
-      });
-    }
-
-    loadFights();
     loadLeaderboard();
-    setInterval(loadFights, 5000);
+    setInterval(loadLeaderboard, 10000);
   </script>
 </body>
 </html>
