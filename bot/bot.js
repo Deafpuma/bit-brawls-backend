@@ -393,6 +393,7 @@ async function modViaAPI(broadcasterId, userId, accessToken, clientId) {
 }
 
 
+
 async function sendWhisper(fromUserId, toUserId, message, accessToken, clientId) {
   try {
     const res = await fetch(`https://api.twitch.tv/helix/whispers?from_user_id=${fromUserId}&to_user_id=${toUserId}`, {
@@ -507,15 +508,21 @@ async function runFight(fighterA, fighterB, channelLogin) {
     if (wasModBeforeTimeout[loser]) {
       console.log(`🔁 Will remod ${loser} in ${duration} seconds`);
       setTimeout(async () => {
-        const remodSuccess = await modViaAPI(config.user_id, loserData.userId, config.access_token, process.env.TWITCH_CLIENT_ID);
-        if (remodSuccess) {
-          enqueueMessage(channel, `🛡️ ${loser} has been re-modded.`);
+        const config = await getBroadcasterToken(channelLogin); // ✅ fetch fresh credentials
+        if (config?.access_token) {
+          const remodSuccess = await modViaAPI(config.user_id, loserData.userId, config.access_token, process.env.TWITCH_CLIENT_ID);
+          if (remodSuccess) {
+            enqueueMessage(channel, `🛡️ ${loser} has been re-modded.`);
+          } else {
+            enqueueMessage(channel, `⚠️ Failed to remod ${loser}.`);
+          }
         } else {
-          enqueueMessage(channel, `⚠️ Failed to remod ${loser}.`);
+          enqueueMessage(channel, `⚠️ No broadcaster token found to remod ${loser}.`);
         }
         delete wasModBeforeTimeout[loser];
       }, duration * 1000);
     }
+    
   }
 
   delete userBitWagers[fighterA.username];
