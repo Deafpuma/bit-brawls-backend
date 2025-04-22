@@ -647,8 +647,9 @@ client.on('message', async (channel, tags, message, self) => {
       }, 60000); // ⏱ 60 seconds to respond
 
       const blindMsg = getBlindMessage(username);
+      enqueueMessage(channel, blindMsg,);
 
-      enqueueMessage(channel, blindMsg, `🤫 @${username}, whisper me how many Bits you want to wager (must be 5 or more)..`);
+      enqueueMessage(channel, `🤫 @${username}, whisper me how many Bits you want to wager (must be 5 or more)..`);
       return;
     }
 
