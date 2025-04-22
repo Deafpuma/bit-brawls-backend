@@ -100,16 +100,6 @@ app.get('/resolve-login/:userId', async (req, res) => {
   const { userId } = req.params;
 
   try {
-    // Try Firestore first
-    const snapshot = await db.collection("broadcaster_tokens").get();
-    for (const doc of snapshot.docs) {
-      const data = doc.data();
-      if (data.user_id === userId) {
-        return res.json({ login: data.login });
-      }
-    }
-
-    // Fallback: Twitch API
     const response = await fetch(`https://api.twitch.tv/helix/users?id=${userId}`, {
       headers: {
         'Client-ID': CLIENT_ID,
@@ -122,11 +112,10 @@ app.get('/resolve-login/:userId', async (req, res) => {
       return res.status(404).json({ error: 'Login not found' });
     }
 
-    return res.json({ login: json.data[0].login });
-
+    res.json({ login: json.data[0].login });
   } catch (err) {
-    console.error("❌ Twitch resolve-login error:", err.message);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    console.error("❌ Failed to resolve login:", err.message);
+    res.status(500).json({ error: 'Server error resolving login' });
   }
 });
 
