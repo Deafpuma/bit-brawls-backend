@@ -382,6 +382,38 @@ async function modViaAPI(broadcasterId, userId, accessToken, clientId) {
   }
 }
 
+
+async function sendWhisper(fromUserId, toUserId, message, accessToken, clientId) {
+  try {
+    const res = await fetch(`https://api.twitch.tv/helix/whispers?from_user_id=${fromUserId}&to_user_id=${toUserId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Client-Id': clientId,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ message })
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.warn(`❌ Whisper API failed: ${res.status} ${errorText}`);
+      return false;
+    }
+
+    console.log(`✅ Whisper sent to ${toUserId}`);
+    return true;
+  } catch (err) {
+    console.error(`❌ Whisper API error: ${err.message}`);
+    return false;
+  }
+}
+
+
+
+
+
+
 // === Fight ===
 function tryStartFight(channelLogin) {
   if (fightInProgress || challengeQueue.length < 2) return;
@@ -578,10 +610,24 @@ client.on('message', async (channel, tags, message, self) => {
 
     if (isBlind) {
       pendingBlindBrawlers[login] = channelLogin;
-      client.whisper(login, `👋 Hey ${username}, how many Bits do you want to wager? Reply here.`)
-        .catch(err => console.warn(`❌ Whisper failed: ${err.message}`));
-      return enqueueMessage(channel, `👀 Whisper sent to ${username} for blind Bit Brawl entry.`);
+    
+      const whisperText = `👋 Hey ${username}, how many Bits do you want to wager for this blind brawl? Just reply here with a number.`;
+      const broadcasterConfig = await getBroadcasterToken(channelLogin);
+    
+      if (broadcasterConfig?.access_token) {
+        await sendWhisper(
+          broadcasterConfig.user_id,  
+          userId,                    
+          whisperText,
+          broadcasterConfig.access_token,
+          process.env.TWITCH_CLIENT_ID
+        );
+        return enqueueMessage(channel, `👀 Whisper sent to ${username} for blind Bit Brawl entry.`);
+      } else {
+        return enqueueMessage(channel, `⚠️ Cannot send whisper. Missing access token for ${channelLogin}.`);
+      }
     }
+    
 
     if (bitWager < 5) bitWager = 5;
     userBitWagers[username] = bitWager;
