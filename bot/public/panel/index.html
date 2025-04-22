@@ -71,7 +71,7 @@
       try {
         const res = await fetch(`/resolve-login/${channelId}`);
         const json = await res.json();
-        return json.login || null;
+        return json.login?.toLowerCase() || null;
       } catch (err) {
         console.error("❌ Failed to resolve login:", err.message);
         return null;
