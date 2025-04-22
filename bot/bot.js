@@ -394,6 +394,26 @@ async function modViaAPI(broadcasterId, userId, accessToken, clientId) {
   }
 }
 
+async function isModInChannel(broadcasterId, userId, accessToken, clientId) {
+  try {
+    const res = await fetch(`https://api.twitch.tv/helix/moderation/moderators?broadcaster_id=${broadcasterId}&user_id=${userId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Client-ID': clientId
+      }
+    });
+
+    if (!res.ok) return false;
+    const data = await res.json();
+    return data.data && data.data.length > 0;
+  } catch (err) {
+    console.warn("❌ Mod check error:", err.message);
+    return false;
+  }
+}
+
+
 
 
 async function sendWhisper(fromUserId, toUserId, message, accessToken, clientId) {
@@ -478,8 +498,11 @@ async function runFight(fighterA, fighterB, channelLogin) {
     const reason = getRandomKOReason();
 
     const config = await getBroadcasterToken(channelLogin);
+    
+    const actuallyMod = await isModInChannel(config.user_id, loserData.userId, config.access_token, process.env.TWITCH_CLIENT_ID);
 
-    if (loserData.isMod && config?.access_token) {
+
+    if (actuallyMod) {
       wasModBeforeTimeout[loser] = true;
       console.log(`🧹 Scheduling unmod for ${loser}`);
       await sleep(500);
