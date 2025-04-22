@@ -2,12 +2,10 @@ const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fet
 const tmi = require('tmi.js');
 const fs = require('fs');
 require('dotenv').config();
+const { getBroadcasterToken, db } = require('./config/firebase');
 
-const { getBroadcasterToken } = require("./config/firebase");
 
 const appRef = require('./server');
-
-const { db } = require('./config/firebase');
 
 
 const CHAT_OAUTH = process.env.CHAT_OAUTH;
