@@ -610,22 +610,8 @@ client.on('message', async (channel, tags, message, self) => {
 
     if (isBlind) {
       pendingBlindBrawlers[login] = channelLogin;
-    
-      const whisperText = `👋 Hey ${username}, how many Bits do you want to wager for this blind brawl? Just reply here with a number.`;
-      const broadcasterConfig = await getBroadcasterToken(channelLogin);
-    
-      if (broadcasterConfig?.access_token) {
-        await sendWhisper(
-          broadcasterConfig.user_id,  
-          userId,                    
-          whisperText,
-          broadcasterConfig.access_token,
-          process.env.TWITCH_CLIENT_ID
-        );
-        return enqueueMessage(channel, `👀 Whisper sent to ${username} for blind Bit Brawl entry.`);
-      } else {
-        return enqueueMessage(channel, `⚠️ Cannot send whisper. Missing access token for ${channelLogin}.`);
-      }
+      enqueueMessage(channel, `🤫 @${username}, whisper me how many Bits you want to wager.`);
+      return;
     }
     
 
@@ -660,22 +646,24 @@ client.on('message', async (channel, tags, message, self) => {
 
 client.on('whisper', (from, userstate, message) => {
   const login = userstate.username;
-  const bitAmount = parseInt(message.trim());
   const channelLogin = pendingBlindBrawlers[login];
+  const bitAmount = parseInt(message.trim());
 
   if (!channelLogin) return;
   if (isNaN(bitAmount) || bitAmount < 5) {
-    return client.whisper(login, `⚠️ Please enter a valid number of Bits (minimum 5).`);
+    client.say(`#${channelLogin}`, `⚠️ ${login}, please whisper a valid number of Bits (min 5).`);
+    return delete pendingBlindBrawlers[login];
   }
 
   userBitWagers[login] = bitAmount;
   const challenger = { username: login, target: null, paid: true };
   challengeQueue.push(challenger);
 
-  client.whisper(login, `✅ You're in the Bit Brawl queue with ${bitAmount} Bits! Good luck!`);
+  enqueueMessage(`#${channelLogin}`, `✅ ${login} is in the Bit Brawl queue with ${bitAmount} Bits (blind entry).`);
   tryStartFight(channelLogin);
   delete pendingBlindBrawlers[login];
 });
+
 
 
 
