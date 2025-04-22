@@ -100,7 +100,6 @@ app.get('/resolve-login/:userId', async (req, res) => {
   const { userId } = req.params;
 
   try {
-
     const response = await fetch(`https://api.twitch.tv/helix/users?id=${userId}`, {
       headers: {
         'Client-ID': CLIENT_ID,
