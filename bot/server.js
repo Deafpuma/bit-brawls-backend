@@ -103,21 +103,22 @@ app.get('/resolve-login/:userId', async (req, res) => {
     const response = await fetch(`https://api.twitch.tv/helix/users?id=${userId}`, {
       headers: {
         'Client-ID': CLIENT_ID,
-        'Authorization': `Bearer ${process.env.API_BEARER.replace(/^oauth:/, '')}` // strip oauth:
+        'Authorization': `Bearer ${process.env.API_BEARER.replace(/^oauth:/, '')}`
       }
     });
 
-    const data = await response.json();
-    if (!data.data || !data.data.length) {
+    const json = await response.json();
+    if (!json.data || !json.data.length) {
       return res.status(404).json({ error: 'Login not found' });
     }
 
-    return res.json({ login: data.data[0].login });
+    res.json({ login: json.data[0].login });
   } catch (err) {
-    console.error("❌ Twitch API error:", err.message);
-    res.status(500).json({ error: 'Twitch API failed' });
+    console.error("❌ Failed to resolve login:", err.message);
+    res.status(500).json({ error: 'Server error resolving login' });
   }
 });
+
 
 
 

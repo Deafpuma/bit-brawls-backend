@@ -13,14 +13,12 @@
       margin: 0;
       padding: 1rem;
     }
-
     h1 {
       text-align: center;
       font-size: 1.5rem;
       margin-bottom: 1rem;
       color: #ffcc00;
     }
-
     .leaderboard {
       background: #1f1f23;
       border: 1px solid #3a3a3d;
@@ -29,12 +27,10 @@
       max-width: 600px;
       margin: 0 auto;
     }
-
     ul {
       list-style: none;
       padding: 0;
     }
-
     li {
       padding: 0.5rem;
       border-bottom: 1px solid #333;
@@ -42,29 +38,20 @@
       justify-content: space-between;
       align-items: center;
     }
-
     li:last-child {
       border-bottom: none;
     }
-
     .rank {
       color: #ffcc00;
       font-weight: bold;
     }
-
     .name {
       flex: 1;
       margin-left: 0.5rem;
     }
-
     .stats {
       color: #aaa;
     }
-
-    .highlight {
-      color: #00ff88;
-    }
-
     .error {
       text-align: center;
       color: red;
@@ -83,9 +70,8 @@
     async function resolveLogin(channelId) {
       try {
         const res = await fetch(`/resolve-login/${channelId}`);
-        const data = await res.json();
-        if (data.login) return data.login;
-        throw new Error("Login not found");
+        const json = await res.json();
+        return json.login || null;
       } catch (err) {
         console.error("❌ Failed to resolve login:", err.message);
         return null;
@@ -93,6 +79,7 @@
     }
 
     async function loadLeaderboard(login) {
+      if (!login) return;
       try {
         const res = await fetch(`/leaderboard/${login}`);
         const data = await res.json();
@@ -109,13 +96,18 @@
             <li>
               <span class="rank">#${index + 1}</span>
               <span class="name">${player.username}</span>
-              <span class="stats">${player.wins || 0}W / ${player.losses || 0}L • ${player.kos || 0} KO • 🔥 ${player.streak || 0}</span>
+              <span class="stats">
+                ${player.wins || 0}W / ${player.losses || 0}L
+                • ${player.kos || 0} KO
+                • 🔥 ${player.streak || 0} Streak
+              </span>
             </li>
           `;
         });
       } catch (err) {
-        document.getElementById("leaderboard-list").innerHTML = `<li class="error">Error loading leaderboard.</li>`;
-        console.error("❌ Error loading leaderboard:", err.message);
+        document.getElementById("leaderboard-list").innerHTML =
+          `<li class="error">Failed to load leaderboard.</li>`;
+        console.error(err);
       }
     }
 
@@ -124,12 +116,18 @@
         window.Twitch.ext.onAuthorized(async (auth) => {
           const channelId = auth.channelId;
           const login = await resolveLogin(channelId);
-          if (login) loadLeaderboard(login);
-          else document.getElementById("leaderboard-list").innerHTML = `<li class="error">Could not resolve Twitch login.</li>`;
+          if (login) {
+            loadLeaderboard(login);
+            setInterval(() => loadLeaderboard(login), 10000);
+          } else {
+            document.getElementById("leaderboard-list").innerHTML =
+              `<li class="error">Could not resolve Twitch login.</li>`;
+          }
         });
       } else {
         const fallback = new URLSearchParams(window.location.search).get("channel") || "deafpuma";
         loadLeaderboard(fallback);
+        setInterval(() => loadLeaderboard(fallback), 10000);
       }
     }
 
