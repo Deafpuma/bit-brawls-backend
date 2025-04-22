@@ -243,7 +243,17 @@ function getBlindMessage(user) {
     `🤖 ${user} initiated blind battle protocol. Awaiting challenger...`,
     `🎯 ${user} loaded up… and covered the wager with duct tape.`,
     `👻 ${user} haunts the queue with an unknown stake.`,
-    `🪞 ${user} stares at their reflection, ready to brawl in silence.`
+    `🪞 ${user} stares at their reflection, ready to brawl in silence.`,
+    `🕶️ ${user} slipped into the Bit Brawl shadows.`,
+    `🤫 ${user} joined the brawl without saying a word.`,
+    `🧤 ${user} quietly laced up for a mysterious match.`,
+    `🎭 ${user} entered wearing a mask. No one knows their game.`,
+    `🪞 ${user} stared into the void and the void brawled back.`,
+    `📦 ${user} entered the brawl... contents unknown.`,
+    `💣 ${user} just dropped in anonymously.`,
+    `🌫️ ${user} vanished... only to reappear in the brawl queue.`,
+    `👤 ${user} joined the match like a ghost in the code.`,
+    `🚷 ${user}'s brawl entry is classified. Proceed with caution.`
   ];
   return messages[Math.floor(Math.random() * messages.length)];
 }
@@ -412,21 +422,28 @@ async function sendWhisper(fromUserId, toUserId, message, accessToken, clientId)
 
 
 
-
-
 // === Fight ===
 function tryStartFight(channelLogin) {
   if (fightInProgress || challengeQueue.length < 2) return;
+
   const a = challengeQueue.shift();
   const bIndex = challengeQueue.findIndex(f =>
-    (!f.target && !a.target) ||
-    f.target === a.username.toLowerCase() ||
-    a.target === f.username.toLowerCase()
+    f.username.toLowerCase() !== a.username.toLowerCase() && (
+      (!f.target && !a.target) ||
+      f.target === a.username.toLowerCase() ||
+      a.target === f.username.toLowerCase()
+    )
   );
-  if (bIndex === -1) return challengeQueue.unshift(a);
+
+  if (bIndex === -1) {
+    challengeQueue.unshift(a); // Put them back
+    return;
+  }
+
   const b = challengeQueue.splice(bIndex, 1)[0];
   runFight(a, b, channelLogin);
 }
+
 
 async function runFight(fighterA, fighterB, channelLogin) {
   fightInProgress = true;
@@ -651,19 +668,20 @@ client.on('whisper', (from, userstate, message) => {
 
   if (!channelLogin) return;
   if (isNaN(bitAmount) || bitAmount < 5) {
-    client.say(`#${channelLogin}`, `⚠️ ${login}, please whisper a valid number of Bits (min 5).`);
-    return delete pendingBlindBrawlers[login];
+    delete pendingBlindBrawlers[login];
+    return;
   }
 
   userBitWagers[login] = bitAmount;
   const challenger = { username: login, target: null, paid: true };
   challengeQueue.push(challenger);
 
-  enqueueMessage(`#${channelLogin}`, `✅ ${login} is in the Bit Brawl queue with ${bitAmount} Bits (blind entry).`);
+  const msg = getBlindMessage(login); // ✅ reuse your existing function
+  enqueueMessage(`#${channelLogin}`, msg);
+
   tryStartFight(channelLogin);
   delete pendingBlindBrawlers[login];
 });
-
 
 
 
