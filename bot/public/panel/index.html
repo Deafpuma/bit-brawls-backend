@@ -81,28 +81,26 @@
 
   <script>
     let broadcasterId = null;
-
-    function fetchLeaderboard(channelId) {
-      fetch(`/leaderboard/${channelId}`)
+  
+    function fetchLeaderboard(login) {
+      fetch(`/leaderboard/${login}`)
         .then(res => res.json())
         .then(data => {
           const list = document.getElementById("leaderboard-list");
           list.innerHTML = "";
-
+  
           if (!data.length) {
             list.innerHTML = `<li class="error">No brawls yet for this channel.</li>`;
             return;
           }
-
+  
           data.forEach((player, index) => {
             list.innerHTML += `
               <li>
                 <span class="rank">#${index + 1}</span>
                 <span class="name">${player.username}</span>
                 <span class="stats">
-                  ${player.wins || 0}W / ${player.losses || 0}L
-                  • ${player.kos || 0} KO
-                  • 🔥 ${player.streak || 0} Streak
+                  ${player.wins || 0}W / ${player.losses || 0}L • ${player.kos || 0} KO • 🔥 ${player.streak || 0} Streak
                 </span>
               </li>
             `;
@@ -114,28 +112,35 @@
           console.error(err);
         });
     }
-
-    function tryLoad() {
-      if (broadcasterId) {
-        fetchLeaderboard(broadcasterId);
-      }
+  
+    function resolveAndLoadLeaderboard(userId) {
+      fetch(`/resolve-login/${userId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.login) {
+            fetchLeaderboard(data.login);
+          } else {
+            console.warn("Could not resolve login from Twitch user ID:", userId);
+          }
+        })
+        .catch(err => {
+          console.error("Failed to resolve login:", err);
+        });
     }
-
-    // ✅ If running inside Twitch panel
+  
     if (window.Twitch && window.Twitch.ext) {
       window.Twitch.ext.onAuthorized(auth => {
         broadcasterId = auth.channelId;
-        tryLoad();
-        setInterval(tryLoad, 10000);
+        resolveAndLoadLeaderboard(broadcasterId);
       });
     } else {
-      // ✅ Fallback for browser test (optional: set ?channel=deafpuma)
+      // Fallback for local browser testing
       const params = new URLSearchParams(window.location.search);
-      const fallbackChannel = params.get("channel") || "deafpuma";
-      broadcasterId = fallbackChannel;
-      tryLoad();
-      setInterval(tryLoad, 10000);
+      const fallback = params.get("channel") || "deafpuma";
+      fetchLeaderboard(fallback);
     }
   </script>
+  
+  
 </body>
 </html>

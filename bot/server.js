@@ -96,6 +96,32 @@ app.get('/latest-fight', (req, res) => {
   res.json(lastFightData);
 });
 
+app.get("/resolve-login/:userId", async (req, res) => {
+  const { userId } = req.params;
+
+  const token = process.env.API_BEARER; // ✅ Use your bot token securely
+  try {
+    const twitchRes = await fetch(`https://api.twitch.tv/helix/users?id=${userId}`, {
+      headers: {
+        'Client-ID': CLIENT_ID,
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    const json = await twitchRes.json();
+    const login = json?.data?.[0]?.login;
+    if (login) {
+      res.json({ login });
+    } else {
+      res.status(404).json({ error: "Login not found" });
+    }
+  } catch (err) {
+    console.error("Failed to resolve login:", err.message);
+    res.status(500).json({ error: "Login resolution failed" });
+  }
+});
+
+
 app.delete('/leaderboard/:broadcaster/reset', async (req, res) => {
   const { broadcaster } = req.params;
 
