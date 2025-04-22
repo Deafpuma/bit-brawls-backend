@@ -1,19 +1,12 @@
 const express = require('express');
-
-
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const fs = require('fs');
 require('dotenv').config();
-
-
-
 const firebase = require("./config/firebase");
-
-
+const { db } = firebase;
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
 const CLIENT_ID = process.env.TWITCH_CLIENT_ID;
 const CLIENT_SECRET = process.env.TWITCH_CLIENT_SECRET;
 
@@ -22,6 +15,8 @@ function loadAuthorizedChannels() {
     ? fs.readFileSync('authorized_channels.txt', 'utf-8').split('\n').filter(Boolean)
     : ['Deafpuma'];
 }
+
+app.use(express.static('public'));
 
 app.get('/', (req, res) => {
   res.send(`
@@ -65,17 +60,22 @@ app.get('/callback', async (req, res) => {
     console.log(`✅ Authorized and added: ${user.login}`);
   }
 
-  // ✅ Save token to Firestore via config/firebase.js
   await firebase.saveBroadcasterToken(user.login, {
     user_id: user.id,
     login: user.login,
-    access_token: tokenData.access_token, // Do not prefix with 'oauth:'
-    client_id: CLIENT_ID // From .env (must match token)
+    access_token: tokenData.access_token,
+    client_id: CLIENT_ID
   });
-  
-  
 
   res.send(`✅ Bot added to <strong>${user.display_name}</strong>'s channel and token saved.`);
+});
+
+app.get("/leaderboard/:broadcaster", async (req, res) => {
+  const { broadcaster } = req.params;
+  const snapshot = await db.collection("leaderboards").doc(broadcaster).collection("players").get();
+  const data = snapshot.docs.map(doc => ({ username: doc.id, ...doc.data() }));
+  data.sort((a, b) => (b.wins || 0) - (a.wins || 0));
+  res.json(data);
 });
 
 app.listen(PORT, '0.0.0.0', () => {

@@ -441,6 +441,23 @@ async function sendWhisper(fromUserId, toUserId, message, accessToken, clientId)
     return false;
   }
 }
+async function updateLeaderboard(winner, loser, bitsA, bitsB) {
+  const db = require('./config/firebase').db;
+
+  const winnerRef = db.collection("leaderboard").doc(winner);
+  const loserRef = db.collection("leaderboard").doc(loser);
+
+  await winnerRef.set({
+    wins: 1,
+    totalBits: bitsA || 0
+  }, { merge: true });
+
+  await loserRef.set({
+    losses: 1,
+    totalBits: bitsB || 0
+  }, { merge: true });
+}
+
 
 
 
@@ -498,9 +515,7 @@ async function runFight(fighterA, fighterB, channelLogin) {
     const reason = getRandomKOReason();
 
     const config = await getBroadcasterToken(channelLogin);
-    
     const actuallyMod = await isModInChannel(config.user_id, loserData.userId, config.access_token, process.env.TWITCH_CLIENT_ID);
-
 
     if (actuallyMod) {
       wasModBeforeTimeout[loser] = true;
@@ -512,7 +527,7 @@ async function runFight(fighterA, fighterB, channelLogin) {
         enqueueMessage(channel, `⚠️ Could not unmod ${loser}.`);
       }
 
-      await sleep(1500); // allow Twitch time to process
+      await sleep(1500);
     }
 
     const timeoutSuccess = await timeoutViaAPI(
@@ -547,13 +562,29 @@ async function runFight(fighterA, fighterB, channelLogin) {
         delete wasModBeforeTimeout[loser];
       }, duration * 1000);
     }
-    
   }
+
+  await updateLeaderboard(winner, loser, wagerA, wagerB);
 
   delete userBitWagers[fighterA.username];
   delete userBitWagers[fighterB.username];
   fightInProgress = false;
 }
+
+
+// === Challenge Message (Blind + Target) ===
+function getBlindTargetMessage(fromUser, toUser) {
+  const lines = [
+    `${fromUser} just sent a shadowy challenge to ${toUser}. The air got colder... ❄️`,
+    `${fromUser} locked onto ${toUser} with a blind bet. Something wicked this way brawls. 🧛‍♂️`,
+    `${fromUser} challenged ${toUser} from the shadows. A mysterious force stirs. 🌒`,
+    `${fromUser} said nothing, but pointed at ${toUser}. The gauntlet is down. 🕶️`,
+    `${fromUser} whispered a challenge to ${toUser}—no one else knows what’s coming. 🤐`,
+    `${fromUser} slipped ${toUser} a folded note that said: 'Brawl me. No one needs to know.' 📜`
+  ];
+  return lines[Math.floor(Math.random() * lines.length)];
+}
+
 
 
 
@@ -683,7 +714,8 @@ client.on('message', async (channel, tags, message, self) => {
       return enqueueMessage(channel, `⚠️ ${username}, you're already in the fight queue.`);
     }
 
-    const challenger = { username, target: isBlind ? null : target, paid: true };
+    const challenger = { username, target: target, paid: true, isBlind };
+
 
     if (!isBlind && target && target !== username.toLowerCase()) {
       pendingChallenges[target] = challenger;
@@ -694,6 +726,11 @@ client.on('message', async (channel, tags, message, self) => {
         }
       }, 60000);
       return enqueueMessage(channel, `🧨 ${username} challenges ${target}! Use !accept ${username} <bits> to respond.`);
+    }
+
+    if (target && target !== username.toLowerCase()) {
+      const blindTargetMsg = getBlindTargetMessage(username, target);
+      enqueueMessage(channel, blindTargetMsg);
     }
 
     challengeQueue.push(challenger);

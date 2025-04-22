@@ -12,19 +12,19 @@
       margin: 0;
       padding: 1rem;
     }
-    h1 {
+    h1, h2 {
       text-align: center;
-      font-size: 1.5rem;
-      margin-bottom: 1rem;
+      color: #ffcc00;
     }
-    .fight {
+    .fight, .leaderboard {
       background: #1e1e1e;
       border: 1px solid #333;
       border-radius: 8px;
       padding: 0.75rem;
-      margin-bottom: 1rem;
+      margin: 1rem auto;
+      max-width: 600px;
     }
-    .fight p {
+    .fight p, .leaderboard li {
       margin: 0.25rem 0;
     }
     .winner {
@@ -33,12 +33,40 @@
     .loser {
       color: #ff4444;
     }
+    .leaderboard ul {
+      padding-left: 1rem;
+    }
+    .leaderboard li {
+      list-style: none;
+      padding: 0.25rem 0;
+      font-size: 1rem;
+    }
+    .leaderboard li::before {
+      content: '🥇';
+      margin-right: 0.5rem;
+    }
+    .gold {
+      color: gold;
+    }
+    .silver {
+      color: silver;
+    }
+    .bronze {
+      color: #cd7f32;
+    }
   </style>
 </head>
 <body>
   <h1>🔥 Bit Brawls - Live Fights</h1>
-  <div id="fightList">
+  <div id="fightList" class="fight">
     <p>Loading last fight...</p>
+  </div>
+
+  <h2>🏆 Top Fighters</h2>
+  <div id="leaderboard" class="leaderboard">
+    <ul id="leaderboard-list">
+      <li>Loading leaderboard...</li>
+    </ul>
   </div>
 
   <script>
@@ -63,8 +91,28 @@
       }
     }
 
+    async function loadLeaderboard() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const channel = urlParams.get("channel");
+      if (!channel) return document.getElementById("leaderboard-list").innerHTML = '<li>No channel provided.</li>';
+      const res = await fetch(`/leaderboard/${channel}`);
+      const data = await res.json();
+
+      const list = document.getElementById("leaderboard-list");
+      list.innerHTML = '';
+      data.forEach((player, index) => {
+        let colorClass = '';
+        if (index === 0) colorClass = 'gold';
+        else if (index === 1) colorClass = 'silver';
+        else if (index === 2) colorClass = 'bronze';
+
+        list.innerHTML += `<li class="${colorClass}">#${index + 1} <strong>${player.username}</strong> - ${player.wins || 0}W / ${player.losses || 0}L</li>`;
+      });
+    }
+
     loadFights();
-    setInterval(loadFights, 5000); // refresh every 5 seconds
+    loadLeaderboard();
+    setInterval(loadFights, 5000);
   </script>
 </body>
 </html>
