@@ -510,12 +510,12 @@ async function runFight(fighterA, fighterB, channelLogin) {
     winner,
     loser,
     intro,
-    roast,
-    timestamp: Date.now()
+    roast
   };
   
-  const appRef = require('./server'); // make sure this is at the top
-  appRef.setLastFight(lastFight);
+  if (appRef.setLastFight) {
+    appRef.setLastFight(lastFight);
+  }
 
   const loserData = userLoginMap[loser];
   if (loserData?.userId && wagerA > 0 && wagerB > 0) {
