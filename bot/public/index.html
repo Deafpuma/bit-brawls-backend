@@ -2,18 +2,41 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bit Brawls</title>
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://extension-files.twitch.tv/helper/v1/twitch-ext.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Authorize Bit Brawls</title>
+  <style>
+    body {
+      background-color: #0e0e10;
+      color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+      text-align: center;
+      padding: 2rem;
+    }
+    h1 {
+      font-size: 2rem;
+      color: #ffcc00;
+    }
+    p {
+      margin-top: 1rem;
+      font-size: 1.1rem;
+    }
+    a {
+      display: inline-block;
+      margin-top: 2rem;
+      background: #6441a5;
+      color: #fff;
+      padding: 0.75rem 1.5rem;
+      border-radius: 5px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
-  <div id="container">
-    <h2>💥 Bit Brawls 💥</h2>
-    <div id="user-info">Connecting to Twitch...</div>
-    <button onclick="triggerTest()">Trigger Test Sound/Visual</button>
-    <div id="fight-log"></div>
-  </div>
-  <script src="script.js" defer></script>
+  <h1>🧠 Bit Brawls Bot Authorization</h1>
+  <p>This authorization allows the bot to manage mod status and timeouts during Bit Brawls.</p>
+  <a href="https://id.twitch.tv/oauth2/authorize?client_id=7967w6razcs2jjfzalkb9yy5q3wi5j&redirect_uri=https://bit-brawls-backend.onrender.com/callback&response_type=code&scope=moderation:read+moderator:manage:banned_users+chat:read+chat:edit+channel:manage:moderators">
+    Authorize Bit Brawls Bot
+  </a>
 </body>
 </html>
