@@ -638,41 +638,28 @@ async function runFight(fighterA, fighterB, channelLogin) {
   const channel = `#${channelLogin}`;
   const sleep = ms => new Promise(res => setTimeout(res, ms));
 
-  const intro = getIntro(fighterA, fighterB);
-  await client.say(channel, `🥊 ${intro}`);
-  await sleep(2000);
-
   const wagerA = userBitWagers[fighterA.username] || 0;
   const wagerB = userBitWagers[fighterB.username] || 0;
 
-  await client.say(channel, `🎲 ${fighterA.username} wagered ${wagerA} Bits vs ${fighterB.username} wagered ${wagerB} Bits! It's on!`);
-  await sleep(2000);
-
+  const intro = getIntro(fighterA, fighterB);
   const winner = wagerA >= wagerB ? fighterA.username : fighterB.username;
   const loser = winner === fighterA.username ? fighterB.username : fighterA.username;
   const roast = getRoast(winner, loser);
-  await client.say(channel, `🏆 ${winner} WINS! 💀 ${loser} KO'd! ${roast}`);
-  await sleep(2000);
 
-  const lastFight = {
-    winner,
-    loser,
-    intro,
-    roast
-  };
-  
+  // 🎯 Send 1 punchy message covering everything
+  await client.say(channel, `🎲 ${intro} ${fighterA.username} wagered ${wagerA} Bits vs ${fighterB.username} wagered ${wagerB} Bits!`);
+  await sleep(1500);
+  await client.say(channel, `🏆 ${winner} wins! 💀 ${loser} KO’d! ${roast}`);
+  await sleep(1500);
+
+  // Save to panel
+  const lastFight = { winner, loser, intro, roast };
   if (appRef.setLastFight) {
     appRef.setLastFight(lastFight);
   }
 
   const loserData = userLoginMap[loser];
   if (loserData?.userId && wagerA > 0 && wagerB > 0) {
-    console.log(`🔍 ${loser} mod status:`, loserData);
-    await sleep(1000);
-
-    const duration = Math.max(30, Math.min(Math.max(wagerA, wagerB), MAX_TIMEOUT_SECONDS));
-    const reason = getRandomKOReason();
-
     const config = await getBroadcasterToken(channelLogin);
     const actuallyMod = await isModInChannel(config.user_id, loserData.userId, config.access_token, process.env.TWITCH_CLIENT_ID);
 
@@ -680,43 +667,28 @@ async function runFight(fighterA, fighterB, channelLogin) {
       wasModBeforeTimeout[loser] = true;
       console.log(`🧹 Scheduling unmod for ${loser}`);
       await sleep(500);
-
       const unmodSuccess = await unmodViaAPI(config.user_id, loserData.userId, config.access_token, process.env.TWITCH_CLIENT_ID);
-      if (!unmodSuccess) {
-        enqueueMessage(channel, `⚠️ Could not unmod ${loser}.`);
-      }
-
-      await sleep(1500);
+      if (!unmodSuccess) enqueueMessage(channel, `⚠️ Could not unmod ${loser}.`);
+      await sleep(1000);
     }
 
-    const timeoutSuccess = await timeoutViaAPI(
-      config.user_id,
-      loserData.userId,
-      duration,
-      reason,
-      config.access_token,
-      process.env.TWITCH_CLIENT_ID
-    );
-
+    const duration = Math.max(30, Math.min(Math.max(wagerA, wagerB), MAX_TIMEOUT_SECONDS));
+    const reason = getRandomKOReason();
+    const timeoutSuccess = await timeoutViaAPI(config.user_id, loserData.userId, duration, reason, config.access_token, process.env.TWITCH_CLIENT_ID);
     if (!timeoutSuccess) {
       enqueueMessage(channel, `⚠️ Could not timeout ${loser}.`);
     } else {
-      console.log(`✅ Timed out ${loser} via API for ${duration}s: ${reason}`);
+      console.log(`✅ Timed out ${loser} for ${duration}s: ${reason}`);
     }
 
     if (wasModBeforeTimeout[loser]) {
       console.log(`🔁 Will remod ${loser} in ${duration} seconds`);
       setTimeout(async () => {
-        const config = await getBroadcasterToken(channelLogin); // ✅ fetch fresh credentials
-        if (config?.access_token) {
-          const remodSuccess = await modViaAPI(config.user_id, loserData.userId, config.access_token, process.env.TWITCH_CLIENT_ID);
-          if (remodSuccess) {
-            enqueueMessage(channel, `🛡️ ${loser} has been re-modded.`);
-          } else {
-            enqueueMessage(channel, `⚠️ Failed to remod ${loser}.`);
-          }
-        } else {
-          enqueueMessage(channel, `⚠️ No broadcaster token found to remod ${loser}.`);
+        const fresh = await getBroadcasterToken(channelLogin);
+        if (fresh?.access_token) {
+          const success = await modViaAPI(fresh.user_id, loserData.userId, fresh.access_token, process.env.TWITCH_CLIENT_ID);
+          if (success) enqueueMessage(channel, `🛡️ ${loser} has been re-modded.`);
+          else enqueueMessage(channel, `⚠️ Failed to remod ${loser}.`);
         }
         delete wasModBeforeTimeout[loser];
       }, duration * 1000);
@@ -724,12 +696,11 @@ async function runFight(fighterA, fighterB, channelLogin) {
   }
 
   await updateLeaderboard(winner, loser, wagerA, wagerB, channelLogin);
-
-
   delete userBitWagers[fighterA.username];
   delete userBitWagers[fighterB.username];
   fightInProgress = false;
 }
+
 
 
 // === Challenge Message (Blind + Target) ===
