@@ -73,7 +73,24 @@ const queueMessages = [
   "🎤 {user} said \"Let’s go!\" with {bits} Bits.",
   "🥷 {user} sneaks into the ring with {bits} Bits ready to throw down!",
   "🧤 {user} laced up and threw {bits} Bits into the pit!",
-  "🎖️ {user} joins the elite with {bits} Bits on the line!"
+  "🎖️ {user} joins the elite with {bits} Bits on the line!",
+  "🧠 {user} is thinking three moves ahead with {bits} Bits.",
+  "💥 {user} burst through the wall like a Kool-Aid man with {bits} Bits!",
+  "🐉 {user} summoned a dragon... but paid {bits} Bits for it.",
+  "👻 {user} phased in from another dimension with {bits} Bits.",
+  "🌪️ {user} is here to stir chaos with {bits} Bits!",
+  "🎮 {user} entered with lag and {bits} Bits. Good luck!",
+  "🪄 {user} cast a risky spell using {bits} magical Bits.",
+  "🪵 {user} built a cabin out of {bits} Bits and now wants a fight.",
+  "🧃 {user} drank a juice box and threw in {bits} Bits for battle.",
+  "🍌 {user} slipped in carrying {bits} Bits and high hopes.",
+  "📡 {user} broadcast their challenge across the galaxy: {bits} Bits!",
+  "👽 {user} arrived from space with {bits} Bits and zero chill.",
+  "🧙 {user} mumbled a brawl incantation and tossed in {bits} Bits.",
+  "🦄 {user} rode a unicorn into the ring with {bits} Bits!",
+  "🥸 {user} wore a disguise but forgot to hide {bits} Bits.",
+  "🛠️ {user} built momentum with {bits} Bits and duct tape.",
+  "🎲 {user} rolled the dice and wagered {bits} Bits. Bold."
 
 ];
 
@@ -95,7 +112,7 @@ async function processMessageQueue() {
 
 function getIntro(a, b) {
   const lines = [
-    `${a.username} bursts in riding a shopping cart straight at ${b.username}!`,
+  `${a.username} bursts in riding a shopping cart straight at ${b.username}!`,
   `${a.username} jumped in yelling “YOU RANG?” while ${b.username} was distracted.`,
   `${a.username} slapped ${b.username} with a rubber chicken. It’s on!`,
   `${a.username} called ${b.username} out during lunch break.`,
@@ -150,7 +167,20 @@ function getIntro(a, b) {
   `${a.username} crashes through the ceiling screaming "${b.username}, FIGHT ME!"`,
   `${a.username} called ${b.username} out during their lunch break.`,
   `${a.username} enters with one sock and all the rage.`,
-  `${a.username} is here, and ${b.username} is about to be there.`
+  `${a.username} is here, and ${b.username} is about to be there.`,
+  `${a.username} entered spinning like a Beyblade directly into ${b.username}'s soul!`,
+  `${a.username} flew in yelling “I’M YOUR SLEEP PARALYSIS DEMON!” at ${b.username}.`,
+  `${a.username} fell from the ceiling tiles, surprising ${b.username}.`,
+  `${a.username} moonwalked in, then dabbed on ${b.username}. Bold.`,
+  `${a.username} brought snacks and a grudge. ${b.username} better be ready.`,
+  `${a.username} screamed “NERF THIS!” and shoulder-checked ${b.username}.`,
+  `${a.username} did a cartwheel, backflip, and accidentally kicked ${b.username}.`,
+  `${a.username} challenged ${b.username} with a glitter bomb and chaotic energy.`,
+  `${a.username} came in hot with a kazoo solo aimed at ${b.username}.`,
+  `${a.username} showed up in swim trunks yelling “TIME TO DIVE!” at ${b.username}.`,
+  `${a.username} showed up from the future. ${b.username} already lost.`,
+  `${a.username} rolled in on a Roomba to confront ${b.username}.`,
+  `${a.username} brought a rubber ducky and rage. ${b.username} is not amused.`
     
   ];
   return lines[Math.floor(Math.random() * lines.length)];
@@ -217,7 +247,21 @@ function getRoast(winner, loser) {
     `🎩 ${winner} turned ${loser} into a disappearing act.`,
     `🌮 ${loser} got crunched like a bad taco.`,
     `🦆 ${loser} waddled in, flew out. ${winner} wins.`,
-    `📡 ${loser} caught signals from every direction — all bad.`
+    `📡 ${loser} caught signals from every direction — all bad.`,
+    `💀 ${loser} got KO’d so hard they respawned in a different game.`,
+    `📉 ${loser}'s stats hit rock bottom — and then started digging.`,
+    `🪞 ${loser} lost the fight and their reflection.`,
+    `🥫 ${loser} got canned. ${winner} sealed the lid.`,
+    `🎂 ${loser} just got served… like a birthday cake.`,
+    `🪓 ${loser} got chopped like a cooking show contestant.`,
+    `🐣 ${loser} cracked under pressure. Scrambled. Toast.`,
+    `🎃 ${loser} got carved like a pumpkin — and not even a good one.`,
+    `🚽 ${loser} flushed their chances. RIP.`,
+    `🥱 ${winner} won while yawning. ${loser}, that’s embarrassing.`,
+    `📴 ${loser} got disconnected mid-defeat.`,
+    `🔌 ${winner} unplugged ${loser} from the Matrix.`,
+    `🎨 ${loser} became abstract art. No one understood the loss.`,
+    `🍜 ${loser} got slurped like discount ramen. Sad but true.`
   
   ];
   return roasts[Math.floor(Math.random() * roasts.length)];
@@ -257,10 +301,84 @@ function getBlindMessage(user) {
     `💣 ${user} just dropped in anonymously.`,
     `🌫️ ${user} vanished... only to reappear in the brawl queue.`,
     `👤 ${user} joined the match like a ghost in the code.`,
-    `🚷 ${user}'s brawl entry is classified. Proceed with caution.`
+    `🚷 ${user}'s brawl entry is classified. Proceed with caution.`,
+    `🎲 ${user} is brawling blind and loving it.`,
+    `🎮 ${user} hit 'Start' without a tutorial.`,
+    `📦 ${user}'s wager is sealed... somewhere in a mystery box.`,
+    `🧃 ${user} sipped their juice and whispered their fate.`,
+    `🔮 ${user} entered with cosmic energy. No one knows the wager.`,
+    `🛸 ${user} came from Area 51 to brawl with zero context.`,
+    `🤯 ${user}'s blind entry confused even the devs.`,
+    `🥷 ${user} snuck in, whispered... and disappeared.`,
+    `👓 ${user} removed their glasses and whispered dramatically.`,
+    `🐇 ${user} hopped down the brawl rabbit hole.`,
+    `🧼 ${user} came in squeaky clean and totally unpredictable.`,
+    `🍿 ${user} whispered their Bits and started watching chaos.`,
+
   ];
   return messages[Math.floor(Math.random() * messages.length)];
 }
+
+function getBlindFollowup() {
+  const lines = [
+    "🤫 whisper me how many Bits you want to wager (minimum 5).",
+    "🎭 your move... send a whisper with your secret bet.",
+    "🕶️ stealth mode engaged — reply in whispers with your Bits.",
+    "📩 drop your wager in a whisper... let the mystery begin.",
+    "💡 send a whisper with your Bit bet to enter the shadows.",
+    "🫥 quietly whisper your Bits and vanish into the queue.",
+    "👀 nobody saw you enter... now whisper your wager.",
+    "🧤 slide your Bits into the shadows via whisper.",
+    "🕳️ toss your Bits into the whisper void — if you dare.",
+    "🔐 whisper your Bits. The vault awaits.",
+    "🕵️‍♂️ the brawl is classified. Whisper your wager, agent.",
+    "🎲 roll your dice in private. Whisper your Bit stake.",
+    "💬 whisper your fate. The ring awaits.",
+    "🤖 input wager. [CONFIDENTIAL] — send via whisper.",
+    "🧛‍♂️ whisper your Bits before the sun rises.",
+    "🎩 whisper in style. Mystery equals power.",
+    "🍕 whisper your wager like you're ordering pizza at 3AM.",
+    "💃 send your whisper like it’s a dance-off in disguise.",
+    "🐍 whisper your Bits like a snake in the grass.",
+    "👻 whisper like a ghost with a gambling addiction.",
+    "🍔 whisper your Bits like you're placing a sketchy burger order.",
+    "🌮 send your whisper like it’s taco Tuesday and honor is on the line.",
+    "🎤 whisper your bet like you’re dropping a mixtape.",
+    "🧙‍♂️ cast your whisper spell. Bit magic is real.",
+    "📦 deliver your Bits like a stealth Amazon package.",
+    "🧼 whisper like you're cleaning up a shady situation.",
+    "🚿 send your whisper like it’s a shower thought.",
+    "🚁 whisper like you're parachuting into the brawl.",
+    "🪄 abracadabra, now whisper the bet.",
+    "📞 this is your final call... whisper the Bits now.",
+    "🐸 whisper like Kermit would. You know what that means.",
+    "🥷 whisper like you’re flipping in from the ceiling.",
+    "🧃 whisper your Bits like it’s juice box diplomacy.",
+    "💥 whisper like you just punched your keyboard in suspense.",
+    "🪖 this is a covert op. Whisper your wager, soldier.",
+    "🧠 big brain moves only. Whisper the bet.",
+    "🪐 launch your Bits into orbit via whisper.",
+    "🧃 hydrate, then whisper your number. It's protocol.",
+    "🐐 whisper your wager. Become the GOAT.",
+    "🚪 knock knock. It’s whisper time.",
+    "📸 whisper like the paparazzi’s watching.",
+    "🎯 send your whisper like you just hit a trick shot.",
+    "🐝 buzz into the DMs with that wager, champ.",
+    "🦖 whisper like you’re a prehistoric gambler.",
+    "🎰 spin the invisible roulette — whisper your number.",
+    "🧟 whisper your Bits like you’ve come back from the timeout grave.",
+    "🔥 whisper so hot, the Bits start melting.",
+    "🌊 surf the wave of mystery — whisper your wager.",
+    "🛸 beam up your bet via whisper to enter the intergalactic arena.",
+    "🎁 unwrap your destiny with a whisper.",
+    "🥚 whisper your Bits like you’re hatching a fight egg.",
+    "🎿 ski into my whispers with those secret Bits.",
+    "🕰️ whisper now... before the timeline splits again.",
+    "🥒 whisper like a pickled prophecy depends on it."
+  ];
+  return lines[Math.floor(Math.random() * lines.length)];
+}
+
 
 function getRandomKOReason() {
   const reasons = [
@@ -298,7 +416,21 @@ function getRandomKOReason() {
     "🧻 crumbled like a cheap napkin.",
     "🫥 disappeared mid-fight. Poof.",
     "🍕 folded like a pizza slice on a hot day.",
-    "🏳️ just surrendered via emoji."
+    "🏳️ just surrendered via emoji.",
+    "🫠 melted into a puddle. Somebody bring a mop.",
+    "🛸 abducted mid-fight. Still missing.",
+    "🎬 became the blooper reel of Bit Brawls.",
+    "🧊 froze like a busted Windows 98 screen.",
+    "📟 just rage quit with a fax machine. Respect.",
+    "📍 pinned to the mat with one word: ouch.",
+    "🐡 puffed up and floated away.",
+    "🍕 folded faster than a slice in New York.",
+    "🐒 got dunked on by a monkey with better reflexes.",
+    "🌈 just vanished into sparkles. Magical loss.",
+    "📺 got turned off like bad cable TV.",
+    "💿 got ejected like a scratched CD-ROM.",
+    "🔧 couldn’t handle the patch notes. KO.",
+    "🧽 wiped clean like a dry-erase board on quiz day."
 
   ];
   return reasons[Math.floor(Math.random() * reasons.length)];
@@ -759,10 +891,11 @@ client.on('message', async (channel, tags, message, self) => {
         enqueueMessage(channel, `⌛ ${username}'s blind brawl timed out. They vanished into the mist... 🫥`);
       }, 60000); // ⏱ 60 seconds to respond
 
+      //enqueueMessage(channel, `@${username} ${blindMsg} 🤫 whisper me how many Bits you want to wager (must be 5 or more)..`);
       const blindMsg = getBlindMessage(username);
-      enqueueMessage(channel, blindMsg, `🤫 @${username}, whisper me how many Bits you want to wager (must be 5 or more)..`);
+      const blindFollowup = getBlindFollowup();
+      enqueueMessage(channel, `@${username} ${blindMsg} ${blindFollowup}`);
 
-      //enqueueMessage(channel, `🤫 @${username}, whisper me how many Bits you want to wager (must be 5 or more)..`);
       return;
     }
 
