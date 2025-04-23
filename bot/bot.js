@@ -92,7 +92,7 @@ async function processMessageQueue() {
   setTimeout(processMessageQueue, 1000);
 }
 
-// === Helper Functions ===
+
 function getIntro(a, b) {
   const lines = [
     `${a.username} bursts in riding a shopping cart straight at ${b.username}!`,
@@ -730,6 +730,15 @@ client.on('message', async (channel, tags, message, self) => {
     return enqueueMessage(channel, `✅ Max timeout set to ${newMax}s for this channel.`);
   }
 
+  if (lowerMsg === '!help') {
+    return enqueueMessage(channel, `📜 Use "!brawl [amount]" to enter, "!brawl blind" for mystery, "!accept [user] [bits]" to fight, "!mybet" to check bet, "!cancel" to leave. Leaderboard: https://bit-brawls-backend.onrender.com/panel/index.html`);
+  }
+  if (lowerMsg === '!blind help') {
+    return enqueueMessage(channel, ` "!brawl blind" whisper your bet for mystery, "!accept [user] [bits]" to fight, "!mybet" to check bet, "!cancel" to leave. Leaderboard: https://bit-brawls-backend.onrender.com/panel/index.html`);
+  }
+  
+  
+
   if (lowerMsg.startsWith('!brawl')) {
     const args = msg.split(' ');
     let target = null;
@@ -751,9 +760,9 @@ client.on('message', async (channel, tags, message, self) => {
       }, 60000); // ⏱ 60 seconds to respond
 
       const blindMsg = getBlindMessage(username);
-      enqueueMessage(channel, blindMsg,);
+      enqueueMessage(channel, blindMsg, `🤫 @${username}, whisper me how many Bits you want to wager (must be 5 or more)..`);
 
-      enqueueMessage(channel, `🤫 @${username}, whisper me how many Bits you want to wager (must be 5 or more)..`);
+      //enqueueMessage(channel, `🤫 @${username}, whisper me how many Bits you want to wager (must be 5 or more)..`);
       return;
     }
 
@@ -815,7 +824,7 @@ client.on('whisper', (from, userstate, message) => {
   const challenger = { username: login, target: null, paid: true };
   challengeQueue.push(challenger);
 
-  const msg = getBlindMessage(login); // ✅ Reuses your silly message list
+  const msg = getBlindMessage(login);
   enqueueMessage(`#${channelLogin}`, msg);
 
   tryStartFight(channelLogin);
