@@ -894,7 +894,7 @@ client.on('message', async (channel, tags, message, self) => {
       //enqueueMessage(channel, `@${username} ${blindMsg} 🤫 whisper me how many Bits you want to wager (must be 5 or more)..`);
       const blindMsg = getBlindMessage(username);
       const blindFollowup = getBlindFollowup();
-      enqueueMessage(channel, `@${username} ${blindMsg} ${blindFollowup}`);
+      enqueueMessage(channel, `${blindMsg} ${blindFollowup}`);
 
       return;
     }
