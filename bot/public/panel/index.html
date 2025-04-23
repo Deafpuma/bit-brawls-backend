@@ -76,18 +76,29 @@
   </div>
 
   <script>
+    async function resolveLogin(channelId) {
+      try {
+        const res = await fetch(`/resolve-login/${channelId}`);
+        const json = await res.json();
+        return json.login?.toLowerCase() || null;
+      } catch (err) {
+        console.error("❌ Failed to resolve login:", err.message);
+        return null;
+      }
+    }
+  
     async function loadLeaderboard(login) {
       try {
         const res = await fetch(`/leaderboard/${login}`);
         const data = await res.json();
         const list = document.getElementById("leaderboard-list");
         list.innerHTML = "";
-
+  
         if (!data.length) {
           list.innerHTML = `<li class="error">No brawls yet for this channel.</li>`;
           return;
         }
-
+  
         data.forEach((player, index) => {
           list.innerHTML += `
             <li>
@@ -103,14 +114,30 @@
         console.error(err);
       }
     }
-
+  
     function startPanel() {
-      const fallback = new URLSearchParams(window.location.search).get("channel") || "deafpuma";
-      loadLeaderboard(fallback);
-      setInterval(() => loadLeaderboard(fallback), 10000);
+      if (window.Twitch && window.Twitch.ext) {
+        window.Twitch.ext.onAuthorized(async (auth) => {
+          const channelId = auth.channelId;
+          const login = await resolveLogin(channelId);
+          if (login) {
+            loadLeaderboard(login);
+            setInterval(() => loadLeaderboard(login), 10000);
+          } else {
+            document.getElementById("leaderboard-list").innerHTML =
+              `<li class="error">Could not resolve Twitch login.</li>`;
+          }
+        });
+      } else {
+        // Fallback for browser testing only
+        const fallback = new URLSearchParams(window.location.search).get("channel") || "deafpuma";
+        loadLeaderboard(fallback);
+        setInterval(() => loadLeaderboard(fallback), 10000);
+      }
     }
-
+  
     startPanel();
   </script>
+  
 </body>
 </html>
