@@ -67,9 +67,20 @@
   </div>
 
   <script>
-    async function loadLeaderboard(broadcaster) {
+    async function resolveLogin(channelId) {
       try {
-        const res = await fetch(`/leaderboard/${broadcaster}`);
+        const res = await fetch(`/resolve-login/${channelId}`);
+        const json = await res.json();
+        return json.login?.toLowerCase() || null;
+      } catch (err) {
+        console.error("❌ Failed to resolve Twitch login:", err.message);
+        return null;
+      }
+    }
+
+    async function loadLeaderboard(login) {
+      try {
+        const res = await fetch(`/leaderboard/${login}`);
         const data = await res.json();
         const list = document.getElementById("leaderboard-list");
         list.innerHTML = "";
@@ -84,11 +95,7 @@
             <li>
               <span class="rank">#${index + 1}</span>
               <span class="name">${player.username}</span>
-              <span class="stats">
-                ${player.wins || 0}W / ${player.losses || 0}L
-                • ${player.kos || 0} KO
-                • 🔥 ${player.streak || 0} Streak
-              </span>
+              <span class="stats">${player.wins || 0}W / ${player.losses || 0}L • ${player.kos || 0} KO • 🔥 ${player.streak || 0} Streak</span>
             </li>
           `;
         });
@@ -100,9 +107,22 @@
     }
 
     function startPanel() {
-      const fallback = new URLSearchParams(window.location.search).get("channel") || "deafpuma";
-      loadLeaderboard(fallback);
-      setInterval(() => loadLeaderboard(fallback), 10000);
+      if (window.Twitch && window.Twitch.ext) {
+        window.Twitch.ext.onAuthorized(async (auth) => {
+          const resolvedLogin = await resolveLogin(auth.channelId);
+          if (resolvedLogin) {
+            loadLeaderboard(resolvedLogin);
+            setInterval(() => loadLeaderboard(resolvedLogin), 10000);
+          } else {
+            document.getElementById("leaderboard-list").innerHTML =
+              `<li class="error">Could not resolve Twitch login.</li>`;
+          }
+        });
+      } else {
+        const fallback = new URLSearchParams(window.location.search).get("channel") || "deafpuma";
+        loadLeaderboard(fallback);
+        setInterval(() => loadLeaderboard(fallback), 10000);
+      }
     }
 
     startPanel();
