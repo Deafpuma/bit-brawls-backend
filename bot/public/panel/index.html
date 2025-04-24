@@ -3,129 +3,26 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Bit Brawls Leaderboard</title>
-  <script src="https://extension-files.twitch.tv/helper/v1/twitch-ext.min.js"></script>
+  <title>Bit Brawls Panel</title>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
       background: #0e0e10;
       color: #f1f1f1;
-      margin: 0;
-      padding: 1rem;
+      text-align: center;
+      padding: 2rem;
     }
     h1 {
-      text-align: center;
-      font-size: 1.5rem;
-      margin-bottom: 1rem;
       color: #ffcc00;
     }
-    .leaderboard {
-      background: #1f1f23;
-      border: 1px solid #3a3a3d;
-      border-radius: 10px;
-      padding: 1rem;
-      max-width: 600px;
-      margin: 0 auto;
-    }
-    ul {
-      list-style: none;
-      padding: 0;
-    }
-    li {
-      padding: 0.5rem;
-      border-bottom: 1px solid #333;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    li:last-child {
-      border-bottom: none;
-    }
-    .rank {
-      color: #ffcc00;
-      font-weight: bold;
-    }
-    .name {
-      flex: 1;
-      margin-left: 0.5rem;
-    }
-    .stats {
-      color: #aaa;
-    }
-    .error {
-      text-align: center;
-      color: red;
+    p {
+      font-size: 1.1rem;
+      color: #ccc;
     }
   </style>
 </head>
 <body>
-  <h1>🏆 Bit Brawls Leaderboard</h1>
-  <div class="leaderboard">
-    <ul id="leaderboard-list">
-      <li>Loading leaderboard...</li>
-    </ul>
-  </div>
-
-  <script>
-    async function resolveLogin(channelId) {
-      try {
-        const res = await fetch(`/resolve-login/${channelId}`);
-        const json = await res.json();
-        return json.login?.toLowerCase() || null;
-      } catch (err) {
-        console.error("❌ Failed to resolve Twitch login:", err.message);
-        return null;
-      }
-    }
-
-    async function loadLeaderboard(login) {
-      try {
-        const res = await fetch(`/leaderboard/${login}`);
-        const data = await res.json();
-        const list = document.getElementById("leaderboard-list");
-        list.innerHTML = "";
-
-        if (!data.length) {
-          list.innerHTML = `<li class="error">No brawls yet for this channel.</li>`;
-          return;
-        }
-
-        data.forEach((player, index) => {
-          list.innerHTML += `
-            <li>
-              <span class="rank">#${index + 1}</span>
-              <span class="name">${player.username}</span>
-              <span class="stats">${player.wins || 0}W / ${player.losses || 0}L • ${player.kos || 0} KO • 🔥 ${player.streak || 0} Streak</span>
-            </li>
-          `;
-        });
-      } catch (err) {
-        document.getElementById("leaderboard-list").innerHTML =
-          `<li class="error">Failed to load leaderboard.</li>`;
-        console.error(err);
-      }
-    }
-
-    function startPanel() {
-      if (window.Twitch && window.Twitch.ext) {
-        window.Twitch.ext.onAuthorized(async (auth) => {
-          const resolvedLogin = await resolveLogin(auth.channelId);
-          if (resolvedLogin) {
-            loadLeaderboard(resolvedLogin);
-            setInterval(() => loadLeaderboard(resolvedLogin), 10000);
-          } else {
-            document.getElementById("leaderboard-list").innerHTML =
-              `<li class="error">Could not resolve Twitch login.</li>`;
-          }
-        });
-      } else {
-        const fallback = new URLSearchParams(window.location.search).get("channel") || "deafpuma";
-        loadLeaderboard(fallback);
-        setInterval(() => loadLeaderboard(fallback), 10000);
-      }
-    }
-
-    startPanel();
-  </script>
+  <h1>🧠 Bit Brawls Panel</h1>
+  <p>Leaderboard Coming Soon!</p>
 </body>
 </html>
